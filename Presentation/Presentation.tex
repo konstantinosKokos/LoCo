@@ -1,0 +1,113 @@
+\documentclass{beamer}
+\usetheme[
+  block=fill,
+  background=dark,
+  titleformat=smallcaps,
+  progressbar=frametitle,
+  numbering=none,
+]{metropolis}
+
+%----------------------------------------------------------------------------
+% LoCo
+%----------------------------------------------------------------------------
+\setbeamertemplate{frametitle}[default][center]
+
+%Color
+\definecolor{mDarkBrown}{HTML}{604c38}
+\definecolor{mDarkTeal}{HTML}{23373b}
+\definecolor{mLightBrown}{HTML}{EB811B}
+\definecolor{mLightGreen}{HTML}{14B03D}
+% Math
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+% Code listing
+\usepackage{minted}
+%\usemintedstyle{friendly}
+\usemintedstyle{tango}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+% Graphs
+\usepackage{tikz}
+\usetikzlibrary{calc, trees, fit}
+\usepackage{pgfplots}
+% Graphics
+\usepackage{graphics}
+\graphicspath{{figures/}} % Location of the graphics files
+
+\newcommand\todo[1]{\textcolor{red}{#1}}
+\newcommand{\w}[1]{\textit{"#1"}}
+\newcommand{\sm}[1]{\text{\small{#1}}}
+\newcommand\s{\textsc}
+
+% Box macro
+\newcommand{\ex}[2]{
+  \vfill
+  \begin{alertblock}{#1}
+    #2
+  \end{alertblock}
+}
+\newcommand\tsc[1]{\alert{\textsc{#1}}}
+
+%----------------------------------------------------------------------------
+
+% Beamer
+\title{Differentiable Neural Computers}
+\subtitle{Hybrid Computing using a neural network with dynamic external memory (Graves et al. 2016)}
+\author{Konstantinos Kogkalidis}
+\date{May 28, 2018}
+\institute{Universiteit Utrecht}
+
+\begin{document}
+	\maketitle
+	
+\begin{frame}{Overview}
+	A \alert{recurrent neural network} controlling a large external memory.
+	
+	\pause
+	Key Features:
+	\begin{itemize}
+	\item End-to-end differentiable
+	\item Turing complete
+	\item Extension of NTMs
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Introduction: Motivation}
+	Von Neumann architecture
+	\begin{figure}
+	\begin{tikzpicture}
+		[auto,
+		block/.style ={rectangle, draw=mDarkBrown, thick, fill=gray!20, text width=5em, align=center, rounded corners, minimum height=2em},
+		block2/.style ={rectangle, draw=mDarkBrown, thick, fill=mDarkTeal, text width=5em, align=center, rounded corners, minimum height=2em},
+		block3/.style ={rectangle, draw=black, thick, fill=gray!20, text width=5em, align=center, rounded corners, minimum height=2em}]
+		\draw (-1,0.63) node[block3] (i) {\textcolor{mDarkTeal}{\sc{input}}};
+		\draw (6,0.63) node[block3] (o) {\textcolor{mDarkTeal}{\sc{output}}};
+		
+		\draw (2.5,-1) node[block2] (m) {\textcolor{gray!20}{\sc{memory}}};
+		\draw (2.5,1) node[block] (a) {\textcolor{mDarkTeal}{\sc{alu}}};
+		\draw (2.5,2) node[block] (c) {\textcolor{mDarkTeal}{\sc{control unit}}};
+		
+		\node[draw=mDarkBrown, thick, fill=mDarkBrown, fit=(a) (c)](Fit1) {};
+		\draw (2.5,1) node[block] (a) {\textcolor{mDarkTeal}{\sc{alu}}};
+		\draw (2.5,2) node[block] (c) {\textcolor{mDarkTeal}{\sc{control unit}}};
+		
+		\node[draw=black, thick, fill=gray!20, fit=(Fit1) (m)](Fit2) {};
+		\node[draw=mDarkBrown, thick, fill=mDarkBrown, fit=(a) (c)](Fit1) {};
+		\draw (2.5,1) node[block] (a) {\textcolor{mDarkTeal}{\sc{alu}}};
+		\draw (2.5,2) node[block] (c) {\textcolor{mDarkTeal}{\sc{control unit}}};
+		\draw (2.5,-1) node[block2] (m) {\textcolor{gray!20}{\sc{memory}}};
+
+		\draw (i) edge [->, black, thick] (Fit2);
+		\draw (Fit2) edge [->, black, thick] (o);
+		\draw ($(m.north) + (0.25,0)$) edge [<-, mDarkBrown, thick] ($(Fit1.south) + (0.25, 0)$ );
+		\draw ($(m.north) + (-0.25,0)$) edge [->, mDarkTeal, thick] ($(Fit1.south) + (-0.25, 0)$ );
+
+	\end{tikzpicture}
+	\end{figure}
+\end{frame}
+	
+
+
+\end{document}
