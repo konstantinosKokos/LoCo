@@ -21,6 +21,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{stmaryrd}
+\usepackage{bm}
 % Code listing
 \usepackage{minted}
 %\usemintedstyle{friendly}
@@ -57,20 +58,31 @@
 \subtitle{Hybrid Computing using a neural network with dynamic external memory (Graves et al. 2016)}
 \author{Konstantinos Kogkalidis}
 \date{May 28, 2018}
-\institute{Universiteit Utrecht}
+\institute{Logic and Computation}
 
 \begin{document}
 	\maketitle
 	
 \begin{frame}{Overview}
-	A \alert{recurrent neural network} controlling a large external memory.
+	\alert{Differentiable Neural Computer}\\
+	A recurrent neural network coupled with an external memory.
 	
 	\pause
-	Key Features:
 	\begin{itemize}
-	\item End-to-end differentiable
-	\item Turing complete
 	\item Extension of NTMs
+	\begin{itemize}
+		\pause
+		\item End-to-end differentiable
+		\pause
+		\item Auto-associative memory
+		\pause
+		\item Turing complete
+		\pause
+		\item[+] Memory attention mechanisms
+		\end{itemize}
+	\pause
+	\item Mimic mammalian biological memory
+	\item Employ classical concepts of computation
 	\end{itemize}
 \end{frame}
 
@@ -108,10 +120,13 @@
 	\end{figure}
 \end{frame}
 
+
+
 \begin{frame}{Introduction: Motivation}
-	\begin{minipage}{.4\textwidth}	
+	\begin{minipage}[t]{.44\textwidth}	
 	\alert{Simple Neural Net}
-	\begin{figure}
+	\begin{figure}[h!]
+	\vspace{6.5pt}
 	\begin{tikzpicture}[scale=.5]
 		\foreach \y /\alph/\name in {
 			0/x1/$x_1$,
@@ -119,7 +134,6 @@
 		  	-2/x3/$x_3$,
 		  	-4/xM/$x_M$
 		 }{
-		% 	\node[] (\alph) at (0,\y) {\name};
 		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (0,\y) {\tiny \textcolor{mDarkTeal}{\name}};
 		 }
 		 \node (x..) at (0,-3) {\tiny {\vdots}};
@@ -149,13 +163,17 @@
 		 {\draw (\x) edge[gray!90] (\y);}}
 	\end{tikzpicture}
 	\end{figure}
+	\vspace{10pt}
+	\centering
+	\small \alert{$y=g(h),\ h=f(x)$}\\
+	No memory
 	\end{minipage}
 	\pause
 	\hspace{1cm}
-	\begin{minipage}{.4\textwidth}	
+	\begin{minipage}[t]{.44\textwidth}	
 	\alert{Recurrent Neural Net}
-	\begin{figure}
-	\begin{tikzpicture}[scale=.25]
+	\begin{figure}[h!]
+	\begin{tikzpicture}[scale=.5]
 		\foreach \y /\alph/\name in {
 			0/x1/$x_1$,
 		  	-1/x2/$x_2$,
@@ -172,7 +190,7 @@
 		  	-1/h3/$h_3$,
 		  	-5/hN/$h_N$
 		 }{
-		 	\node[circle, draw=gray!90, thick, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (4,\y) {\tiny \textcolor{mDarkTeal}{\name}};
+		 	\node[circle, draw=mLightBrown, inner sep=0pt,minimum size=3mm,fill=gray!20] (\alph) at (4,\y) {\tiny \textcolor{mDarkTeal}{\name}};
 		 }
 		 \node (h..) at (4,-3) {\tiny {\vdots}};
 		 \foreach \y /\alph/\name in {
@@ -186,19 +204,57 @@
 		 \node (y..) at (8,-3) {\tiny {\vdots}};
 		 \foreach \x in {x1, x2, x3, xM}
 		 {\foreach \h in {h1, h2, h3, hN}
-		 {\draw (\x) edge[dotted, gray!90] (\h);}}
+		 {\draw (\x) edge[gray!90] (\h);}}
 		 \foreach \x in {h1, h2, h3, hN}
 		 {\foreach \y in {y1, y2, y3, yP}
-		 {\draw (\x) edge[dotted, gray!90] (\y);}}
-		 \foreach \h in {h1}
-		 {\draw (\h.west) [<-, red] .. controls +(-0.8,0.8) and +(0.8,0.8) .. (\h.east);}
-		 \foreach \h in {h1}
-		 {\foreach \hh in {h2, h3, hN}
-		 {\draw (\h.east) edge[->, red] (\hh.west);}}
+		 {\draw (\x) edge[gray!90] (\y);}}
+		 \draw (h1.east) [->, densely dotted, thick, mLightBrown] .. controls +(0.8,0.8) and +(-0.8,0.8) .. (h1.west);
+		 \draw (h1.east) [->, densely dotted, thick, mLightBrown] .. controls +(0.4,-0.8) and +(-0.4,0.8) .. (h2.west);
+		 \draw (h1.east) [->, densely dotted, thick, mLightBrown] .. controls +(1,-1.6) and +(-0.6,0.4) .. (h3.west);
+		 \draw (h1.east) [->, densely dotted, thick, mLightBrown] .. controls +(2,-2) and +(-2,2) .. (hN.west);
 	\end{tikzpicture}
 	\end{figure}
+	\vspace{10pt}
+	\centering
+	\small{ \alert{$h(t)=f([x(t); h(t-1)])$}}\\
+	Finite, non-contiguous memory
 	\end{minipage}
 \end{frame}
 
+\begin{frame}{Approach}
+	Allow an RNN to act as a controller to interact with a memory matrix of N (arbitrary many) addresses.
+	\pause
+	\begin{enumerate}
+	\item \alert{Content Lookup}\\
+		\begin{itemize}
+		\item \alert{Attention} over memory defined by weightings $W \in \mathbb{R}^N$
+		\item Compare controller output with memory objects (\alert{auto-associative memory})
+		\item Allow partial matches  (\alert{pattern completion})
+		\end{itemize}
+	\pause
+	\item \alert{Sequential Retrieval}
+		\begin{itemize} 
+		\item Fill $L \in \{0,1\}^{2N}$ indexing \alert{temporal transitions}
+		\item \alert{Shift} operations defined by $LW,\ L^TW$
+		\end{itemize}
+	\pause
+	\item \alert{Dynamic Allocation}
+		\begin{itemize}
+		\item Mark memory locations with $\{0,1\}$ to \alert{signal usage}
+		\item Manipulate signals during R/W operations to enable \alert{reallocation}
+		\item Generalization to \alert{unbounded memory}
+		\end{itemize}
+	\end{enumerate}
+\end{frame}
 	
+\begin{frame}{Controller}
+A deep long-short term memory unit receiving 
+\[
+\pmb{\small{\mathcal{X}}}_t=[ \pmb{x}_t; \pmb{r}_{t-1}^1; \dots \pmb{r}_{t-1}^R]
+\]
+and producing
+\[
+\pmb{a}
+\]
+\end{frame}
 \end{document}
