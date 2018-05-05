@@ -254,19 +254,19 @@
 \end{frame}
 	
 \begin{frame}{Controller}
-	A deep \alert{long short-term memory network} receiving 
+	A deep \alert{long short-term memory network} receiving input:
 	\[
 	\xx_t=[ \pmb{x}_t; \pmb{r}_{t-1}^1; \dots ;\pmb{r}_{t-1}^R]
 	\]
-	and producing 
+	and producing output:
 	\[
-	(\pmb{v}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_T];\theta)
+	(\pmb{v}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_T];\vartheta)
 	\]
-	where $\mathcal{N}$ a set of state equations and $\theta$ their trainable parameters.
+	where $\mathcal{N}$ a set of state equations and $\vartheta$ their trainable parameters.
 \end{frame}
 
-\begin{frame}{Controller}
-	A more detailed look into $\mathcal{N}$ and LSTMs:\\
+\begin{frame}{Controller: State Equations}
+	A more detailed look into $\mathcal{N}$:\\
 	\begin{align}
 	\ii_t^l &= \sigma(W_i^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_i^l)   \tag{\alert{input gate}}\\
 	\ff_t^l &= \sigma(W_f^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_f^l)	\tag{\alert{forget gate}}\\
@@ -279,8 +279,8 @@
 	\end{align}
 \end{frame}
 
-\begin{frame}{Controller}
-	\alert{Single LSTM Layer}
+\begin{frame}{Controller: Signal-Flow}
+	\alert{Single LSTM layer}
 	\begin{figure}
 	\begin{tikzpicture}[scale=0.5]
 		%-------------------------------------------------------------------------------
@@ -296,32 +296,32 @@
 		%\draw[thick] (18,12) |- (0,0);
 		
 		% core nodes
-		\node[circle, inner sep=0pt,minimum size=3mm,fill=white] (conc) 
-			at (-0,6) {\textcolor{mDarkTeal}{$;$}};
+		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (conc) 
+			at (-0,6) {\textcolor{black}{$;$}};
 		\node[circle, draw=black, thick, inner sep=0pt,minimum size=6mm,fill=white] (s) 
-			at (9,6) {\large\textcolor{black}{$\Ss_t$}};
-		\node[circle, inner sep=0pt,minimum size=3mm,fill=white] (fx) 
-			at (9,4) {\textcolor{mDarkTeal}{$\times$}};
+			at (9,6) {\large\textcolor{black}{$\Ss_t^l$}};
+		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (fx) 
+			at (9,4) {\textcolor{black}{$\times$}};
 		\node[circle, draw=black, thick, inner sep=0pt,minimum size=6mm,fill=white] (f) 
-			at (9,2) {\large\textcolor{black}{$\ff_t$}};
+			at (9,2) {\large\textcolor{black}{$\ff_t^l$}};
 		\node[circle, draw=black, thick, inner sep=0pt,minimum size=6mm,fill=white] (i) 
-			at (6,8) {\large\textcolor{black}{$\ii_t$}};
-		\node[circle, inner sep=0pt,minimum size=3mm,fill=white] (ix) 
-			at (6,6) {\textcolor{mDarkTeal}{$\times$}};
-		\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (id) 
-			at (4,8) {\textcolor{mDarkTeal}{$\int$}};
-		\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (sd) 
-			at  (4,6) {\small\textcolor{mDarkTeal}{$\int$}};
+			at (6,8) {\large\textcolor{black}{$\ii_t^l$}};
+		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (ix) 
+			at (6,6) {\textcolor{black}{$\times$}};
+		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (id) 
+			at (4,8) {\textcolor{black}{$\int$}};
+		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (sd) 
+			at  (4,6) {\small\textcolor{black}{$\int$}};
 		\node[circle, draw=black, thick, inner sep=0pt,minimum size=6mm,fill=white] (o) 
-			at (12,10) {\large\textcolor{black}{$\oo_t$}};
-		\node[circle, inner sep=0pt,minimum size=3mm,fill=white] (ox) 
-			at (16,6) {\textcolor{mDarkTeal}{$\times$}};
-		\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (od) 
-			at (12,6) {\small\textcolor{mDarkTeal}{$\int$}};
-		\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (odd) 
-			at (4,10) {\small\textcolor{mDarkTeal}{$\int$}};
-		\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (fd) 
-			at (4,2) {\small\textcolor{mDarkTeal}{$\int$}};
+			at (12,10) {\large\textcolor{black}{$\oo_t^l$}};
+		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (ox) 
+			at (16,6) {\textcolor{black}{$\times$}};
+		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (od) 
+			at (12,6) {\small\textcolor{black}{$\int$}};
+		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (odd) 
+			at (4,10) {\small\textcolor{black}{$\int$}};
+		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (fd) 
+			at (4,2) {\small\textcolor{black}{$\int$}};
 		% recurrency
 		\draw (f) edge[thick] (fd);
 		\draw[thick] (fd) -| (2,6);
@@ -336,7 +336,8 @@
 		\draw (s) edge[<-,bend left=45, thick] (fx);
 		\draw (f) edge[->, thick] (fx);
 		% forward
-		\draw(-2,6) edge[thick] (conc);
+		\draw (-2,4)[->,thick] -| (conc);
+		\draw(-2,6) edge[thick,->] (conc);
 		\draw (0,6) edge[thick] (sd);
 		\draw (sd) edge[->, thick] (ix);
 		\draw (ix) edge[->, thick] (s);
@@ -345,9 +346,10 @@
 		\draw (ox) edge[->, thick] (20,6);
 		
 		% labels
+		\node[label=below:$\textcolor{white}{\hh_t^{l-1}}$] (ht1) at (-1,4) {};
 		\node[label=above:$\textcolor{white}{\xx_t}$] (x) at (-1,6) {};
-		\node[label=above:$\textcolor{white}{\hh_t}$] (ht) at (19.5,6) {};
-		\node[label=above:$\textcolor{white}{\hh_{t-1}}$] (x) at (9,12) {};
+		\node[label=above:$\textcolor{white}{\hh_t^l}$] (ht) at (19.5,6) {};
+		\node[label=above:$\textcolor{white}{\hh_{t-1}^l}$] (x) at (9,12) {};
 		\end{tikzpicture}
 	\end{figure}
 \end{frame}
