@@ -69,6 +69,27 @@
 \begin{document}
 	\maketitle
 	
+\begin{frame}{Probabilistic Programming}
+	Cross-domain
+	\begin{itemize}
+	\item Data Flow Programming
+	\item Bayesian Reasoning
+	\item Machine Learning
+	\item Functional Programming
+	\end{itemize}
+	\pause
+	Intuition:
+	\textit{"Rather than explicitly write a program, write some \alert{constraints} on the behavior of the desired program and use computational tools to search the program space for \alert{models} satisfying these constraints."}
+	\pause
+	\[\begin{array}{rl}
+	\textsc{Program} & \textsc{Model}\\
+	\hline
+	Discrete & Continuous\\
+	Deterministic & Stochastic\\
+	Static & Adaptive\\
+	\end{array}\]
+\end{frame}
+
 \begin{frame}{Overview}
 	\alert{Differentiable Neural Computer}\\
 	A recurrent neural network coupled with an external memory.
@@ -126,8 +147,6 @@
 	\end{figure}
 \end{frame}
 
-
-
 \begin{frame}{Introduction: Motivation}
 	\begin{minipage}[t]{.44\textwidth}	
 	\alert{Simple Neural Net}
@@ -177,7 +196,7 @@
 	\pause
 	\hspace{1cm}
 	\begin{minipage}[t]{.44\textwidth}	
-	\alert{Recurrent Neural Net}
+	\alert{Simple Recurrent Net}
 	\begin{figure}[h!]
 	\begin{tikzpicture}[scale=.5]
 		\foreach \y /\alph/\name in {
@@ -225,6 +244,15 @@
 	\small{ \alert{$h(t)=f([x(t); h(t-1)])$}}\\
 	Finite, non-contiguous memory
 	\end{minipage}
+	\pause
+	
+	\begin{quote}
+	\small \textit{"If training vanilla neural nets is optimization over functions, training recurrent nets is \alert{optimization over programs.}"}
+	\end{quote}
+\end{frame}
+
+\begin{frame}{Introduction: Motivation}
+	
 \end{frame}
 
 \begin{frame}{Approach}
@@ -313,7 +341,7 @@
 		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (sd) 
 			at  (4,6) {\small\textcolor{black}{$\int$}};
 		\node[circle, draw=black, thick, inner sep=0pt,minimum size=6mm,fill=white] (o) 
-			at (12,10) {\large\textcolor{black}{$\oo_t^l$}};
+			at (16,10) {\large\textcolor{black}{$\oo_t^l$}};
 		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (ox) 
 			at (16,6) {\textcolor{black}{$\times$}};
 		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (od) 
@@ -353,4 +381,56 @@
 		\end{tikzpicture}
 	\end{figure}
 \end{frame}
+
+\begin{frame}{Controller: Outputs}
+	\topskip0pt
+	\vspace*{\fill}
+	\[
+	(\pmb{v}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_T];\vartheta)
+	\]
+	\pause
+	Output given by:
+	\[
+	\pmb{y}_t = \pmb{v}_t + W_R[\pmb{r}_t^1;\dots;\pmb{r}_t^R] \tag{hello}
+	\]
+\end{frame}
+
+\begin{frame}{Controller: Outputs}
+	\topskip0pt
+	\[
+	(\pmb{v}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_T];\vartheta)
+	\]
+	\vspace{5pt}
+	\pause
+	\begin{equation*}
+	\begin{split}
+	\pmb\xi_t = [ \pmb{k}_t^{r,1};\dots;\pmb{k}_t^{r,R};\ 
+				\hat{\beta}_t^{r,1};\dots;\hat{\beta}_t^{r,R};\ 
+				\pmb{k}_t^w;\ \hat{\beta}_t^w; \\
+				\hat{\pmb{e}}_t;\
+				\pmb{v}_t;\ \hat{\pmb{f}}_t^1;\dots;\hat{\pmb{f}_t^R};\ 
+				\hat{g}_t^a;\ \hat{g}_t^w;\ \hat{\pmb{\pi}}_t^1;\dots;\hat{\pmb{\pi}}_t^R;]					
+	\end{split}
+	\end{equation*}
+\end{frame}
+
+\begin{frame}{Controller: Outputs}
+	\topskip0pt
+	\[
+	(\pmb{v}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_T];\vartheta)
+	\]
+	\vspace{5pt}
+	\begin{equation*}
+	\begin{split}
+	\pmb\xi_t = [\overbrace{\pmb{k}_t^{r,1};\dots;\pmb{k}_t^{r,R};\ }^\text{\alert{R read keys}}
+				\hat{\beta}_t^{r,1};\dots;\hat{\beta}_t^{r,R};\ 
+				\pmb{k}_t^w;\ \hat{\beta}_t^w; \\
+				\hat{\pmb{e}}_t;\
+				\pmb{v}_t;\ \hat{\pmb{f}}_t^1;\dots;\hat{\pmb{f}_t^R};\ 
+				\hat{g}_t^a;\ \hat{g}_t^w;\ \hat{\pmb{\pi}}_t^1;\dots;\hat{\pmb{\pi}}_t^R;]					
+	\end{split}
+	\end{equation*}
+
+\end{frame}
+
 \end{document}
