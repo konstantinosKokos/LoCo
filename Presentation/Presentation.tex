@@ -190,8 +190,9 @@
 	\end{figure}
 	\vspace{10pt}
 	\centering
-	\small \alert{$y=g(h),\ h=f(x)$}\\
-	No memory
+	%\small \alert{$y=g(h),\ h=f(x)$}\\
+	\small $NN: \pmb{x}_{t_i} \mapsto \pmb{y}_{t_i}$\\
+	\alert{No memory}
 	\end{minipage}
 	\pause
 	\hspace{1cm}
@@ -241,18 +242,21 @@
 	\end{figure}
 	\vspace{10pt}
 	\centering
-	\small{ \alert{$h(t)=f([x(t); h(t-1)])$}}\\
-	Finite, non-contiguous memory
+	%\small{ \alert{$h(t)=f([x(t); h(t-1)])$}}\\
+	\small{ $RNN: \pmb{x}_{t_0} \otimes \pmb{x}_{t_1} \otimes \dots \otimes \pmb{x}_{t_i} \mapsto \pmb{y}_{t_i}$}\\
+	\alert{Finite memory}
 	\end{minipage}
 	\pause
 	
 	\begin{quote}
-	\small \textit{"If training vanilla neural nets is optimization over functions, training recurrent nets is \alert{optimization over programs.}"}
+	\small \textit{"If training vanilla neural nets is optimization over functions, training recurrent nets is \alert{optimization over programs}."}
 	\end{quote}
 \end{frame}
 
 \begin{frame}{Approach}
-	Train a RNN to act as a \alert{controller} to interact with a memory matrix M of N (arbitrary many) addresses.
+	Train a RNN to act as the \alert{controller} of a memory matrix M of N 
+	addresses through R \alert{read heads} and one \alert{write head}.
+	
 	\pause
 	\begin{enumerate}
 	\item \alert{Content Lookup}\\
@@ -264,7 +268,7 @@
 	\pause
 	\item \alert{Sequential Retrieval}
 		\begin{itemize} 
-		\item Fill $L \in \{0,1\}^{2N}$ indexing \alert{temporal transitions}
+		\item Fill $L \in [0,1]^{2N}$ indexing \alert{temporal transitions}
 		\item \alert{Shift} operations defined by $LW,\ L^TW$
 		\end{itemize}
 	\pause
@@ -277,7 +281,7 @@
 	\end{enumerate}
 \end{frame}
 	
-\begin{frame}{Controller}
+\begin{frame}{Controller: Overview}
 	A deep \alert{long short-term memory network} receiving input:
 	\[
 	\xx_t=[ \pmb{x}_t; \pmb{r}_{t-1}^1; \dots ;\pmb{r}_{t-1}^R]
@@ -303,7 +307,7 @@
 	\end{align}
 \end{frame}
 
-\begin{frame}{Controller: Signal-Flow}
+\begin{frame}{Controller: Signal-Flow (1/2)}
 	\alert{Single LSTM layer}
 	\begin{figure}
 	\begin{tikzpicture}[scale=0.5]
@@ -378,7 +382,7 @@
 		\end{figure}
 \end{frame}
 
-\begin{frame}{Controller: Full View}
+\begin{frame}{Controller: Signal-Flow (2/2)}
 	\alert{LSTM Network} (multiple layers)
 	\begin{figure}
 	\begin{tikzpicture}[scale=1]
@@ -387,39 +391,37 @@
 		\node (dummy_node) at (0,0) {};
 		\foreach \name/\x in {x1/2, x2/4, x3/6, xd/8, xL/10} {\node[inner sep=0] (\name) at (\x,0) {};}
 		\foreach \name/\x in {h1/3, h2/5, h3/7, hL/10} {\node[inner sep=0] (\name) at (\x, -2) {};}
-		\foreach \name/\x in {s0/3, s1/5, s2/7, sL/10} {\node[split] (\name) at (\x,-3) {$\textcolor{black}{\tiny;}$};}
+		\foreach \name/\x in {s1/5, s2/7, sL/10} {\node[split] (\name) at (\x,-3) {$\textcolor{black}{\tiny;}$};}
 		\foreach \name/\x/\tag in {L1/2/$LSTM_1$, L2/4/$LSTM_2$, L3/6/$LSTM_3$, LL/10/$LSTM_L$} 
 		{\node[miniLSTM] (\name) at (\x,-2) {\textcolor{black}{\tiny\tag}};}
 		\node (Ld) at (8,-2) {$\dots$};
 		\node (sd) at (8,-3) {$\dots$};
 		\draw (dummy_node) -| (LL);
-		\draw (L1) edge[->] (L2);
-		\draw (L2) edge[->] (L3);
-		\draw (L3) edge[->] (Ld);
-		\draw (Ld) edge[->] (LL);
-		\draw[->] (x1) edge (L1.north);
-		\draw[->] (x2) edge (L2.north);
-		\draw[->] (x3) edge (L3.north);
-		\draw[->] (xL) edge (LL.north);
-		\draw[->] (xd) edge (Ld.north);
-		\draw[->] (1,0) |- (s0);
-		\draw[->] (h1) edge (s0);
-		\draw[->] (s0) edge (s1);
-		\draw[->] (h2) edge (s1);
-		\draw[->] (h3) edge (s2);
-		\draw[->] (s1) edge (s2);
-		\draw[->] (s2) edge (sd);
-		\draw[->] (sd) edge (sL);
-		\draw[->] (LL) edge (sL);		
-		\draw[->] (sL) edge (10, -5);
+		\draw (L1) edge[->,thick] (L2);
+		\draw (L2) edge[->,thick] (L3);
+		\draw (L3) edge[->,thick] (Ld);
+		\draw (Ld) edge[->,thick] (LL);
+		\draw[->,thick] (x1) edge (L1.north);
+		\draw[->,thick] (x2) edge (L2.north);
+		\draw[->,thick] (x3) edge (L3.north);
+		\draw[->,thick] (xL) edge (LL.north);
+		\draw[->,thick] (xd) edge (Ld.north);
+		%\draw[->,thick] (1,0) |- (s0);
+		\draw[->,thick] (h1) |- (s1);
+		\draw[->,thick] (h2) edge (s1);
+		\draw[->,thick] (h3) edge (s2);
+		\draw[->,thick] (s1) edge (s2);
+		\draw[->,thick] (s2) edge (sd);
+		\draw[->,thick] (sd) edge (sL);
+		\draw[->,thick] (LL) edge (sL);		
+		\draw[->,thick] (sL) edge (10, -5);
 		% labels
 		\node[label=above right :$\scriptsize\textcolor{white}{\xx_t}$] (xt) at (0,0) {};
 		\node[label=above :$\scriptsize\textcolor{white}{\hh_t^1}$] (xt) at (3,-2) {};
 		\node[label=above :$\scriptsize\textcolor{white}{\hh_t^2}$] (xt) at (5,-2) {};
 		\node[label=above :$\scriptsize\textcolor{white}{\hh_t^3}$] (xt) at (7,-2) {};
-		\node[label=below :$\scriptsize\textcolor{white}{[\xx_t;\hh_t^1]}$] (xt) at (4,-3) {};
-		\node[label=below :$\scriptsize\textcolor{white}{[\xx_t;\hh_t^1;\hh_t^2]}$] (xt) at (6,-3) {};
-		\node[label=left :$\scriptsize\textcolor{white}{[\xx_t;\hh_t^1;\dots;\hh_t^L]}$] (xt) at (10,-5) {};
+		\node[label=below :$\scriptsize\textcolor{white}{[\hh_t^1;\hh_t^2]}$] (xt) at (6,-3) {};
+		\node[label=left :$\scriptsize\textcolor{white}{[\hh_t^1;\hh_t^2;\dots;\hh_t^L]}$] (xt) at (10,-5) {};
 	\end{tikzpicture}
 	\end{figure}
 \end{frame}
@@ -432,13 +434,13 @@
 	\vspace{5pt}
 	
 	\pause
-	\alert{Intermediate output} $\pmb{\upsilon}_t$
+	\alert{Intermediate output} $\pmb{\upsilon}_t = W_y[\hh_t^1;\dots;\hh_t^L]$
 	\[
 	\pmb{y}_t = \pmb{\upsilon}_t + W_R[\pmb{r}_t^1;\dots;\pmb{r}_t^R] \tag{\alert{Memory-conditioning}}
 	\]
 	
 	\pause
-	\alert{Interface vector} $\pmb\xi_t$
+	\alert{Interface vector} $\pmb{\xi}_t = W_\xi[\hh_t^1;\dots;\hh_t^L]$
 	
 	\begin{minipage}{0.49\textwidth}
 	\begin{itemize}
@@ -472,22 +474,37 @@
 %	\end{equation*}
 \end{frame}
 
-\begin{frame}{Memory Adressing: RW}
-\alert{Read operations}
-\[
-\pmb{r}_t^i = M_t^T\pmb{w}_t^{r,i}
-\]
-\pause
-\alert{Write operations}
-\[
-M_t = M_{t-1} \circ (\pmb{1} - \pmb{w}_t^T\pmb{e}_t^T) + \pmb{w}_t^W\pmb{v}_t^T
-\]
+\begin{frame}{Memory Adressing: Content-Lookup}
+	\alert{R read keys} $\pmb{k}^{r,i} \in \mathbb{R}^W,\ i=1\dots R$\\
+	\alert{R read strengths} $\beta^{r,i} \in [1,\infty),\ i=1\dots R$\\
+	\alert{Write key} $\pmb{k}^{w} \in \mathbb{R}^W$\\
+	\alert{Write strength} $\beta^{w} \in [1,\infty)$
+	
+	\pause
+	\alert{Weightings} $w$ given by $\mathcal{C}$
+	\[
+	\mathcal{C}(M,\pmb{k},\beta)[i]= 
+	\frac {exp \{ \mathcal{D} (\pmb{k},M[i,:])\beta \} }
+	{ \sum_{j}{exp \{ \mathcal{D} (\pmb{k},M[j,:])\beta \}}}
+	\]
+	
+	\pause
+	\alert{Read operations}
+	\[
+	\pmb{r}_t^i = M_t^T\pmb{w}_t^{r,i}
+	\]
+	\alert{Write operations}
+	\[
+	M_t = M_{t-1} \circ (\pmb{1} - \pmb{w}_t^w\pmb{e}_t^T) + \pmb{w}_t^w\pmb{v}_t^T
+	\]
 \end{frame}
 
 \begin{frame}{Further Reading}
 	\begin{itemize}
 	\item \alert{Neural Turing Machines} (Graves, Wayne, Danihelka)
 	\item \alert{Entity Networks} (Henaff, Weston, Szlam, Bordes, LeCun)
+	\item \alert{End-to-End Memory Networks} (Sukhbaatar, Szlam, Weston, Fergus)	
+	\item \alert{Jointly Learning to Align and Translate} (Bahdanau, Cho, Bengio)
 	\item \alert{Principles of Probabilistic Programming Languages} (Goodman)
 	\item \alert{Backprop as a Functor} (Fong, Spivak, Tuyéras)
 	\item \alert{Formal Methods for Probabilistic Programming} (Selsam, Liang, Dill)
