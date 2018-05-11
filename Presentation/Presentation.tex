@@ -29,6 +29,10 @@
 \usepackage{amssymb}
 \usepackage{stmaryrd}
 \usepackage{bm}
+\newenvironment{rcases}
+  {\left.\begin{aligned}}
+  {\end{aligned}\right\rbrace}
+
 % Code listing
 \usepackage{minted}
 %\usemintedstyle{friendly}
@@ -96,20 +100,15 @@
 	
 	\pause
 	\begin{itemize}
+	\item Inspired by biological memory
+	\item Reimaging of classical concepts of computation
 	\item Extension of NTMs
 	\begin{itemize}
-		\pause
 		\item End-to-end differentiable
-		\pause
 		\item Auto-associative memory
-		\pause
 		\item Turing complete
-		\pause
-		\item[+] Memory attention mechanisms
-		\end{itemize}
-	\pause
-	\item Mimic mammalian biological memory
-	\item Employ classical concepts of computation
+		\item[+] Stronger memory management
+	\end{itemize}
 	\end{itemize}
 \end{frame}
 
@@ -147,7 +146,7 @@
 	\end{figure}
 \end{frame}
 
-\begin{frame}{Introduction: RNNs}
+\begin{frame}{Introduction: Neural Networks}
 	\begin{minipage}[t]{.44\textwidth}	
 	\alert{Simple Neural Net}
 	\begin{figure}[h!]
@@ -261,15 +260,15 @@
 	\begin{enumerate}
 	\item \alert{Content Lookup}\\
 		\begin{itemize}
-		\item \alert{Attention} over memory defined by weightings $W \in \mathbb{R}^N$
+		\item \alert{Attention} over memory defined by weightings $w \in \mathcal{S}^N$
 		\item Compare controller output with memory objects (\alert{auto-associative memory})
 		\item Allow partial matches  (\alert{pattern completion})
 		\end{itemize}
 	\pause
 	\item \alert{Sequential Retrieval}
 		\begin{itemize} 
-		\item Fill $L \in [0,1]^{2N}$ indexing \alert{temporal transitions}
-		\item \alert{Shift} operations defined by $LW,\ L^TW$
+		\item Fill $L \in [0,1]^{N \times N}$ indexing \alert{temporal transitions}
+		\item \alert{Shift} operations defined by $Lw,\ L^\top w$
 		\end{itemize}
 	\pause
 	\item \alert{Dynamic Allocation}
@@ -284,27 +283,54 @@
 \begin{frame}{Controller: Overview}
 	A deep \alert{long short-term memory network} receiving input:
 	\[
-	\xx_t=[ \pmb{x}_t; \pmb{r}_{t-1}^1; \dots ;\pmb{r}_{t-1}^R]
+	\xx_t=[ \pmb{x}_t; \pmb{r}_{t-1}^1; \dots ;\pmb{r}_{t-1}^R] \tag{\text{\alert{timestep t}}}
 	\]
 	and producing output:
 	\[
-	(\pmb{\upsilon}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_T];\vartheta)
+	(\pmb{\upsilon}_T,\pmb{\xi}_T)=\mathcal{N}([\xx_1;\dots;\xx_T];\vartheta) \tag{\text{\alert{entire sequence}}}
 	\]
 	where $\mathcal{N}$ a set of state equations and $\vartheta$ their trainable parameters.
 \end{frame}
 
 \begin{frame}{Controller: State Equations}
-	A more detailed look into $\mathcal{N}$:\\
+	A more detailed look into $\mathcal{N}$.\\	
+	
+%	\pause
+%	\begin{equation*}
+%	\begin{rcases}
+%  	\text{\alert{Input}} &: [\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]\\
+%  	\text{\alert{Output}} &: \hh_t^l\\
+%	\end{rcases}
+%	\text{(\alert{Layer \alert{l} at time \alert{t}})}
+%	\end{equation*}
+	
+	\pause		
+	\underline{\alert{LSTM layer equations}}
+
+	\alert{Input}: $[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]$ \\
+	\alert{Output}: $\hh_t^l$
+	\pause
 	\begin{align}
-	\ii_t^l &= \sigma(W_i^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_i^l)   \tag{\alert{input gate}}\\
-	\ff_t^l &= \sigma(W_f^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_f^l)	\tag{\alert{forget gate}}\\
-	\Ss_t^l &= \ff_t^l\Ss_{t-1}^l + \ii_t^ltanh(W_s^l[\xx_t;\hh_{t_1}^l;\hh_t^{l-1}] + \bb_s^l)		\tag{\alert{state}}\\
-	\oo_t^l &= \sigma(W_o^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_o^l)		\tag{\alert{output gate}}\\
-	\hh_t^l &= \oo_t^ltanh(\Ss_t^l)		\tag{\alert{hidden}}\\
-	\nonumber \\ 
-	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
-	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
+	\ii_t^l &= \zeta_i([\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]) \tag{\alert{input gate}}\\
+	\ff_t^l &= \zeta_f([\xx_t;\hh_{t-1}^l;\hh_t^{l-1}])	\tag{\alert{forget gate}}\\
+	\Ss_t^l &= \ff_t^l\Ss_{t-1}^l + \ii_t^l\zeta_s([\xx_t;\hh_{t_1}^l;\hh_t^{l-1}]) \tag{\alert{state update}}\\
+	\oo_t^l &= \zeta_o([\xx_t;\hh_{t-1}^l;\hh_t^{l-1}])	\tag{\alert{output gate}}\\
+	\hh_t^l &= \oo_t^l\zeta_h(\Ss_t^l)		\tag{\alert{hidden layer}}
 	\end{align}
+%	\nonumber \\ 
+%	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
+%	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
+%	\end{align}
+%	\begin{align}
+%	\ii_t^l &= \sigma(W_i^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_i^l)   \tag{\alert{input gate}}\\
+%	\ff_t^l &= \sigma(W_f^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_f^l)	\tag{\alert{forget gate}}\\
+%	\Ss_t^l &= \ff_t^l\Ss_{t-1}^l + \ii_t^ltanh(W_s^l[\xx_t;\hh_{t_1}^l;\hh_t^{l-1}] + \bb_s^l)		\tag{\alert{state}}\\
+%	\oo_t^l &= \sigma(W_o^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_o^l)		\tag{\alert{output gate}}\\
+%	\hh_t^l &= \oo_t^ltanh(\Ss_t^l)		\tag{\alert{hidden}}\\
+%	\nonumber \\ 
+%	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
+%	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
+%	\end{align}
 \end{frame}
 
 \begin{frame}{Controller: Signal-Flow (1/2)}
@@ -336,20 +362,20 @@
 			at (6,8) {\large\textcolor{black}{$\ii_t^l$}};
 		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (ix) 
 			at (6,6) {\textcolor{black}{$\times$}};
-		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (id) 
-			at (4,8) {\textcolor{black}{$\int$}};
-		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (sd) 
-			at  (4,6) {\small\textcolor{black}{$\int$}};
+		\node[rectangle, draw=black, inner sep=0pt,minimum size=4mm,fill=white] (id) 
+			at (4,8) {\textcolor{black}{$\zeta_i$}};
+		\node[rectangle, draw=black, inner sep=0pt,minimum size=4mm,fill=white] (sd) 
+			at  (4,6) {\small\textcolor{black}{$\zeta_s$}};
 		\node[circle, draw=black, thick, inner sep=0pt,minimum size=6mm,fill=white] (o) 
 			at (16,10) {\large\textcolor{black}{$\oo_t^l$}};
 		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (ox) 
 			at (16,6) {\textcolor{black}{$\times$}};
-		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (od) 
-			at (12,6) {\small\textcolor{black}{$\int$}};
-		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (odd) 
-			at (4,10) {\small\textcolor{black}{$\int$}};
-		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (fd) 
-			at (4,2) {\small\textcolor{black}{$\int$}};
+		\node[rectangle, draw=black, inner sep=0pt,minimum size=4mm,fill=white] (hd) 
+			at (12,6) {\small\textcolor{black}{$\zeta_h$}};
+		\node[rectangle, draw=black, inner sep=0pt,minimum size=4mm,fill=white] (odd) 
+			at (4,10) {\small\textcolor{black}{$\zeta_o$}};
+		\node[rectangle, draw=black, inner sep=0pt,minimum size=4mm,fill=white] (fd) 
+			at (4,2) {\small\textcolor{black}{$\zeta_f$}};
 		% recurrency
 		\draw (f) edge[thick] (fd);
 		\draw[thick] (fd) -| (2,6);
@@ -369,8 +395,8 @@
 		\draw (0,6) edge[thick] (sd);
 		\draw (sd) edge[->, thick] (ix);
 		\draw (ix) edge[->, thick] (s);
-		\draw (s) edge[thick] (od);
-		\draw (od) edge[->, thick] (ox);
+		\draw (s) edge[thick] (hd);
+		\draw (hd) edge[->, thick] (ox);
 		\draw (ox) edge[->, thick] (20,6);
 		
 		% labels
@@ -444,20 +470,20 @@
 	
 	\begin{minipage}{0.49\textwidth}
 	\begin{itemize}
-		\item Read keys %$\pmb{k}_t^{r,i} \in \mathbb{R}^W$
-		\item Read strengths %$\beta_t^{r,i} \in [1,\infty)$
-		\item Write key %$\pmb{k}_t^w \in \mathbb{R}^W$	
-		\item Write strength %$\beta_t^{w} \in [1,\infty)$
-		\item Erase vector %$\pmb{e}_t \in [0,1]^W$	
+		\item Read keys: $\pmb{k}_t^{r,i}$ % \in \mathbb{R}^W$
+		\item Read strengths: $\beta_t^{r,i}$ % \in [1,\infty)$
+		\item Write key: $\pmb{k}_t^w$ % \in \mathbb{R}^W$	
+		\item Write strength: $\beta_t^{w}$ % \in [1,\infty)$
+		\item Erase vector: $\pmb{e}_t$ % \in [0,1]^W$	
 	\end{itemize}
 	\end{minipage}
 	\begin{minipage}{0.49\textwidth}
 	\begin{itemize}
-		\item Write vector %$\pmb{v}_t \in \mathbb{R}^W$
-		\item Free gates %$\pmb{f}_t^i \in [0,1]$		
-		\item Allocation gate %$g_t^a \in [0,1]$
-		\item Write gate %$g_t^w \in [0,1]$
-		\item Read modes %$\pmb{\pi}_t^i \in \mathcal{S}_3$
+		\item Write vector: $\pmb{v}_t$ % \in \mathbb{R}^W$
+		\item Free gates: $\pmb{\phi}_t^i$ % \in [0,1]$		
+		\item Allocation gate: $g_t^a$ % \in [0,1]$
+		\item Write gate: $g_t^w$ % \in [0,1]$
+		\item Read modes: $\pmb{\pi}_t^i$ % \in \mathcal{S}_3$
 	\end{itemize}
 	\end{minipage}
 %	\begin{equation*}
@@ -478,25 +504,73 @@
 	\alert{R read keys} $\pmb{k}^{r,i} \in \mathbb{R}^W,\ i=1\dots R$\\
 	\alert{R read strengths} $\beta^{r,i} \in [1,\infty),\ i=1\dots R$\\
 	\alert{Write key} $\pmb{k}^{w} \in \mathbb{R}^W$\\
-	\alert{Write strength} $\beta^{w} \in [1,\infty)$
+	\alert{Write strength} $\beta^{w} \in [1,\infty)$\\
 	
 	\pause
-	\alert{Weightings} $w$ given by $\mathcal{C}$
+	\alert{Matching function} $\mathcal{D}$ comparing memory contents
+	
+	\pause
+	\alert{Weighting function} $\mathcal{C}$ normalizing and sharpening matches
 	\[
 	\mathcal{C}(M,\pmb{k},\beta)[i]= 
-	\frac {exp \{ \mathcal{D} (\pmb{k},M[i,:])\beta \} }
-	{ \sum_{j}{exp \{ \mathcal{D} (\pmb{k},M[j,:])\beta \}}}
+	\frac {exp \{\beta\mathcal{D} (\pmb{k},M[i,:])\} }
+	{ \sum_{j}{exp \{\beta\mathcal{D} (\pmb{k},M[j,:]) \}}}
 	\]
+\end{frame}
+
+\begin{frame}{Memory Adressing: R/W}
+	\alert{Attention} dictated by weightings $\pmb{w} \in \mathcal{S}^N$\\
+	\alert{Erase vector} $\pmb{e}_t \in [0,1]^W$\\
+	\alert{Write vector} $\pmb{v}_t \in \mathbb{R}^W$\\
+
+	\alert{Read operations}
+	\begin{align*}
+	 \pmb{r}_t^i = M_t^\top\pmb{w}_t^{r,i}\\
+	\end{align*}
 	
 	\pause
-	\alert{Read operations}
-	\[
-	\pmb{r}_t^i = M_t^T\pmb{w}_t^{r,i}
-	\]
 	\alert{Write operations}
-	\[
-	M_t = M_{t-1} \circ (\pmb{1} - \pmb{w}_t^w\pmb{e}_t^T) + \pmb{w}_t^w\pmb{v}_t^T
-	\]
+	\begin{align*}
+	M_t = \underbrace{M_{t-1} \circ (\pmb{1} - \pmb{w}_t^w\pmb{e}_t^\top)}_{\text{erased memory}} + 
+	\underbrace{\pmb{w}_t^w\pmb{v}_t^\top}_{\text{new write}}
+	\end{align*}
+\end{frame}
+
+\begin{frame}{Memory Adressing: Dynamic Allocation}
+	\alert{Free gates} $\pmb{\phi}_t^i \in [0,1]^W$\\
+	\alert{Allocation gate} $g_t^a \in [0,1]$\\
+	\alert{Write gate} $g_t^w \in [0,1]$\\
+	
+	\alert{"Free list" scheme}
+	\begin{align*}
+	\pmb{\psi}_t &= \prod\limits_{i=1}^R (\pmb{1} - \pmb{\phi}_t^iw_{t-1}^{r,i}) \tag{\alert{memory retention}}\\
+	u_t &= (\pmb{u}_{t-1} + \pmb{w}_{t-1}^w + \pmb{u}_{t-1} \circ \pmb{w}_{t-1}^w) \circ \pmb{\psi}_t \tag{\alert{usage tracking}}\\
+	\end{align*}
+	
+	\pause
+	\alert{Attention shift} 
+	\begin{itemize}
+	\item Obtain the \alert{allocation vector} $\pmb{a}_t$ by normalizing $\pmb{u}_t$\\
+	\item \alert{Shift} $\pmb{w}_t$ by $g_t^a\pmb{a}_t$ and \alert{scale} by $g_t^w$
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Memory Adressing: Temporal Linking}
+	\alert{Free gates} $\pmb{\phi}_t^i \in [0,1]^W$\\
+	
+	\alert{Memory retention}
+	\begin{align*}
+	\pmb{\psi}_t = \prod\limits_{i=1}^R (\pmb{1} - \pmb{\phi}_t^iw_{t-1}^{r,i}) \\
+	\end{align*}
+	
+	\pause
+	\alert{Usage tracking}
+	\begin{align*}
+	u_t = (\pmb{u}_{t-1} + \pmb{w}_{t-1}^w + \pmb{u}_{t-1} \circ \pmb{w}_{t-1}^w) \circ \pmb{\psi}_t\\
+	\end{align*}
+	
+	\pause
+	\alert{Allocation vector} $\pmb{a}_t$ given by normalizing and sorting $\pmb{u}_t$
 \end{frame}
 
 \begin{frame}{Further Reading}
@@ -509,6 +583,14 @@
 	\item \alert{Backprop as a Functor} (Fong, Spivak, Tuyéras)
 	\item \alert{Formal Methods for Probabilistic Programming} (Selsam, Liang, Dill)
 	\end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusion}
+	\alert{Takeaway}\\
+	We can automatically infer simple functions over complex data structures, in the form of \alert{probability distributions} just by using examples.\\
+		
+	\pause
+	\center	\alert{Thank you!}
 \end{frame}
 
 \end{document}
