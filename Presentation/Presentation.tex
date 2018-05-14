@@ -17,6 +17,7 @@
 \newcommand{\oo}{\pmb{o}}
 \newcommand{\ff}{\pmb{f}}
 \newcommand{\Ss}{\pmb{s}}
+\newcommand{\Cc}{\pmb{c}}
 \newcommand{\bb}{\pmb{b}}
 
 %Color
@@ -100,14 +101,14 @@
 	
 	\pause
 	\begin{itemize}
-	\item Inspired by biological memory
+	\item Functional replication of biological memory
 	\item Reimaging of classical concepts of computation
 	\item Extension of NTMs
 	\begin{itemize}
 		\item End-to-end differentiable
 		\item Auto-associative memory
 		\item Turing complete
-		\item[+] Stronger memory management
+		\item[+] Computationally efficient memory management
 	\end{itemize}
 	\end{itemize}
 \end{frame}
@@ -287,56 +288,38 @@
 	\]
 	and producing output:
 	\[
-	(\pmb{\upsilon}_T,\pmb{\xi}_T)=\mathcal{N}([\xx_1;\dots;\xx_T];\vartheta) \tag{\text{\alert{entire sequence}}}
+	(\pmb{\upsilon}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_t];\vartheta) \tag{\text{\alert{entire sequence}}}
 	\]
-	where $\mathcal{N}$ a set of state equations and $\vartheta$ their trainable parameters.
+	where \alert{$\mathcal{N}$} a set of state equations and \alert{$\vartheta$} their trainable parameters.
 \end{frame}
 
-\begin{frame}{Controller: State Equations}
-	A more detailed look into $\mathcal{N}$.\\	
+\begin{frame}{LSTM: Overview}
+	\alert{LSTM Network}\\
+	Multiple stacked LSTM units.
 	
-%	\pause
-%	\begin{equation*}
-%	\begin{rcases}
-%  	\text{\alert{Input}} &: [\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]\\
-%  	\text{\alert{Output}} &: \hh_t^l\\
-%	\end{rcases}
-%	\text{(\alert{Layer \alert{l} at time \alert{t}})}
-%	\end{equation*}
-	
-	\pause		
-	\underline{\alert{LSTM layer equations}}
+	\alert{LSTM Unit}\\
+	A RNN that has an intrinsic memory \alert{cell} $\Cc_t^l$ and three \alert{gates}.
 
-	\alert{Input}: $[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]$ \\
-	\alert{Output}: $\hh_t^l$
 	\pause
-	\begin{align}
-	\ii_t^l &= \zeta_i([\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]) \tag{\alert{input gate}}\\
-	\ff_t^l &= \zeta_f([\xx_t;\hh_{t-1}^l;\hh_t^{l-1}])	\tag{\alert{forget gate}}\\
-	\Ss_t^l &= \ff_t^l\Ss_{t-1}^l + \ii_t^l\zeta_s([\xx_t;\hh_{t_1}^l;\hh_t^{l-1}]) \tag{\alert{state update}}\\
-	\oo_t^l &= \zeta_o([\xx_t;\hh_{t-1}^l;\hh_t^{l-1}])	\tag{\alert{output gate}}\\
-	\hh_t^l &= \oo_t^l\zeta_h(\Ss_t^l)		\tag{\alert{hidden layer}}
-	\end{align}
-%	\nonumber \\ 
-%	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
-%	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
-%	\end{align}
-%	\begin{align}
-%	\ii_t^l &= \sigma(W_i^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_i^l)   \tag{\alert{input gate}}\\
-%	\ff_t^l &= \sigma(W_f^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_f^l)	\tag{\alert{forget gate}}\\
-%	\Ss_t^l &= \ff_t^l\Ss_{t-1}^l + \ii_t^ltanh(W_s^l[\xx_t;\hh_{t_1}^l;\hh_t^{l-1}] + \bb_s^l)		\tag{\alert{state}}\\
-%	\oo_t^l &= \sigma(W_o^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_o^l)		\tag{\alert{output gate}}\\
-%	\hh_t^l &= \oo_t^ltanh(\Ss_t^l)		\tag{\alert{hidden}}\\
-%	\nonumber \\ 
-%	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
-%	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
-%	\end{align}
+	\begin{enumerate}
+	\item \alert{Input gate} $\ii_t^l$ %regulating flow to the memory cell
+	\item \alert{Forget gate} $\ff_t^l$ %selectively erasing memory cell contents
+	\item \alert{Output gate} $\oo_t^l$ %regulating flow from the memory cell to the output
+	\end{enumerate}
+	
 \end{frame}
 
-\begin{frame}{Controller: Signal-Flow (1/2)}
-	\alert{Single LSTM layer}
+\begin{frame}{LSTM: Signal-Flow (1/2)}
+	\alert{LSTM Unit} (single layer)
+	\begin{itemize}
+	\item	\alert{Input}: $[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]$\\
+	\item	\alert{Output}: $\hh_t^l$\\	
+	\end{itemize}
+	
+	\pause
+	\vspace{-10pt}
 	\begin{figure}
-	\begin{tikzpicture}[scale=0.5]
+	\begin{tikzpicture}[scale=0.45]
 		%-------------------------------------------------------------------------------
 		% LSTM
 		%-------------------------------------------------------------------------------
@@ -353,7 +336,7 @@
 		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (conc) 
 			at (-0,6) {\textcolor{black}{$;$}};
 		\node[circle, draw=black, thick, inner sep=0pt,minimum size=6mm,fill=white] (s) 
-			at (9,6) {\large\textcolor{black}{$\Ss_t^l$}};
+			at (9,6) {\large\textcolor{black}{$\Cc_t^l$}};
 		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (fx) 
 			at (9,4) {\textcolor{black}{$\times$}};
 		\node[circle, draw=black, thick, inner sep=0pt,minimum size=6mm,fill=white] (f) 
@@ -365,7 +348,7 @@
 		\node[rectangle, draw=black, inner sep=0pt,minimum size=4mm,fill=white] (id) 
 			at (4,8) {\textcolor{black}{$\zeta_i$}};
 		\node[rectangle, draw=black, inner sep=0pt,minimum size=4mm,fill=white] (sd) 
-			at  (4,6) {\small\textcolor{black}{$\zeta_s$}};
+			at  (4,6) {\small\textcolor{black}{$\zeta_c$}};
 		\node[circle, draw=black, thick, inner sep=0pt,minimum size=6mm,fill=white] (o) 
 			at (16,10) {\large\textcolor{black}{$\oo_t^l$}};
 		\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=white] (ox) 
@@ -400,6 +383,7 @@
 		\draw (ox) edge[->, thick] (20,6);
 		
 		% labels
+%		\node[label=above:$\textcolor{white}{\mathcal{I}}$] (we) at (1,6) {};		
 		\node[label=below:$\textcolor{white}{\hh_t^{l-1}}$] (ht1) at (-1,4) {};
 		\node[label=above:$\textcolor{white}{\xx_t}$] (x) at (-1,6) {};
 		\node[label=above:$\textcolor{white}{\hh_t^l}$] (ht) at (19.5,6) {};
@@ -410,18 +394,23 @@
 
 \begin{frame}{Controller: Signal-Flow (2/2)}
 	\alert{LSTM Network} (multiple layers)
+	\begin{itemize}
+	\item	\alert{Input}: $\xx_t$\\
+	\item	\alert{Output}: $[\hh_t^1;\hh_t^2;\dots\hh_t^L]$\\	
+	\end{itemize}
+	\pause
 	\begin{figure}
 	\begin{tikzpicture}[scale=1]
 	\tikzset{miniLSTM/.style={draw=black, fill=white, minimum width=20pt, minimum height=10pt, thick}}
 	\tikzset{split/.style={circle, draw=black,inner sep=0pt, minimum size = 3mm, fill=white}}
-		\node (dummy_node) at (0,0) {};
+		\node (dummy_node) at (1,0) {};
 		\foreach \name/\x in {x1/2, x2/4, x3/6, xd/8, xL/10} {\node[inner sep=0] (\name) at (\x,0) {};}
 		\foreach \name/\x in {h1/3, h2/5, h3/7, hL/10} {\node[inner sep=0] (\name) at (\x, -2) {};}
-		\foreach \name/\x in {s1/5, s2/7, sL/10} {\node[split] (\name) at (\x,-3) {$\textcolor{black}{\tiny;}$};}
+		\foreach \name/\x in {s1/5, s2/7, sL/11} {\node[split] (\name) at (\x,-3) {$\textcolor{black}{\tiny;}$};}
 		\foreach \name/\x/\tag in {L1/2/$LSTM_1$, L2/4/$LSTM_2$, L3/6/$LSTM_3$, LL/10/$LSTM_L$} 
 		{\node[miniLSTM] (\name) at (\x,-2) {\textcolor{black}{\tiny\tag}};}
 		\node (Ld) at (8,-2) {$\dots$};
-		\node (sd) at (8,-3) {$\dots$};
+		\node (sd) at (9,-3) {$\dots$};
 		\draw (dummy_node) -| (LL);
 		\draw (L1) edge[->,thick] (L2);
 		\draw (L2) edge[->,thick] (L3);
@@ -439,15 +428,18 @@
 		\draw[->,thick] (s1) edge (s2);
 		\draw[->,thick] (s2) edge (sd);
 		\draw[->,thick] (sd) edge (sL);
-		\draw[->,thick] (LL) edge (sL);		
-		\draw[->,thick] (sL) edge (10, -5);
+		\draw[->,thick] (LL) -| (sL);		
+		\draw[->,thick] (sL) edge (11, -4);
+		\draw (L1.east) [->, densely dotted, thick, gray!90] .. controls +(0.6,-0.8) and +(-0.6,-0.8) .. (L1.south);
+		\draw (L2.east) [->, densely dotted, thick, gray!90] .. controls +(0.6,-0.8) and +(-0.6,-0.8) .. (L2.south);
+		\draw (LL.east) [->, densely dotted, thick, gray!90] .. controls +(0.6,-0.8) and +(-0.6,-0.8) .. (LL.south);
 		% labels
-		\node[label=above right :$\scriptsize\textcolor{white}{\xx_t}$] (xt) at (0,0) {};
+		\node[label=above right :$\scriptsize\textcolor{white}{\xx_t}$] (xt) at (1,0) {};
 		\node[label=above :$\scriptsize\textcolor{white}{\hh_t^1}$] (xt) at (3,-2) {};
 		\node[label=above :$\scriptsize\textcolor{white}{\hh_t^2}$] (xt) at (5,-2) {};
 		\node[label=above :$\scriptsize\textcolor{white}{\hh_t^3}$] (xt) at (7,-2) {};
 		\node[label=below :$\scriptsize\textcolor{white}{[\hh_t^1;\hh_t^2]}$] (xt) at (6,-3) {};
-		\node[label=left :$\scriptsize\textcolor{white}{[\hh_t^1;\hh_t^2;\dots;\hh_t^L]}$] (xt) at (10,-5) {};
+		\node[label=left :$\scriptsize\textcolor{white}{[\hh_t^1;\hh_t^2;\dots;\hh_t^L]}$] (xt) at (11,-4) {};
 	\end{tikzpicture}
 	\end{figure}
 \end{frame}
@@ -556,21 +548,7 @@
 \end{frame}
 
 \begin{frame}{Memory Adressing: Temporal Linking}
-	\alert{Free gates} $\pmb{\phi}_t^i \in [0,1]^W$\\
-	
-	\alert{Memory retention}
-	\begin{align*}
-	\pmb{\psi}_t = \prod\limits_{i=1}^R (\pmb{1} - \pmb{\phi}_t^iw_{t-1}^{r,i}) \\
-	\end{align*}
-	
-	\pause
-	\alert{Usage tracking}
-	\begin{align*}
-	u_t = (\pmb{u}_{t-1} + \pmb{w}_{t-1}^w + \pmb{u}_{t-1} \circ \pmb{w}_{t-1}^w) \circ \pmb{\psi}_t\\
-	\end{align*}
-	
-	\pause
-	\alert{Allocation vector} $\pmb{a}_t$ given by normalizing and sorting $\pmb{u}_t$
+
 \end{frame}
 
 \begin{frame}{Further Reading}
@@ -587,10 +565,35 @@
 
 \begin{frame}{Conclusion}
 	\alert{Takeaway}\\
-	We can automatically infer simple functions over complex data structures, in the form of \alert{probability distributions} just by using examples.\\
+	We can automatically infer simple functions over complex data structures in the form of \alert{probability distributions}, just by using examples!\\
 		
 	\pause
 	\center	\alert{Thank you!}
+\end{frame}
+
+\begin{frame}{LSTM: State Equations}
+
+	\begin{align}
+	\ii_t^l &= \zeta_i(\mathcal{I}) \tag{\alert{input gate}}\\
+	\ff_t^l &= \zeta_f(\mathcal{I})	\tag{\alert{forget gate}}\\
+	\Cc_t^l &= \ff_t^l\Cc_{t-1}^l + \ii_t^l\zeta_c(\mathcal{I}) \tag{\alert{memory cell}}\\
+	\oo_t^l &= \zeta_o(\mathcal{I})	\tag{\alert{output gate}}\\
+	\hh_t^l &= \oo_t^l\zeta_h(\Cc_t^l)		\tag{\alert{hidden layer}}
+	\end{align}
+%	\nonumber \\ 
+%	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
+%	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
+%	\end{align}
+%	\begin{align}
+%	\ii_t^l &= \sigma(W_i^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_i^l)   \tag{\alert{input gate}}\\
+%	\ff_t^l &= \sigma(W_f^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_f^l)	\tag{\alert{forget gate}}\\
+%	\Ss_t^l &= \ff_t^l\Ss_{t-1}^l + \ii_t^ltanh(W_s^l[\xx_t;\hh_{t_1}^l;\hh_t^{l-1}] + \bb_s^l)		\tag{\alert{state}}\\
+%	\oo_t^l &= \sigma(W_o^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_o^l)		\tag{\alert{output gate}}\\
+%	\hh_t^l &= \oo_t^ltanh(\Ss_t^l)		\tag{\alert{hidden}}\\
+%	\nonumber \\ 
+%	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
+%	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
+%	\end{align}
 \end{frame}
 
 \end{document}
