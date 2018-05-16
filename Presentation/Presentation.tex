@@ -254,8 +254,7 @@
 \end{frame}
 
 \begin{frame}{Approach}
-	Train a RNN to act as the \alert{controller} of a memory matrix M of N 
-	addresses through R \alert{read heads} and one \alert{write head}.
+	Train a RNN to act as the \alert{controller} of a memory matrix $M \in \mathbb{R}^{N\times W}$ through R \alert{read heads} and one \alert{write head}.
 	
 	\pause
 	\begin{enumerate}
@@ -274,7 +273,7 @@
 	\pause
 	\item \alert{Dynamic Allocation}
 		\begin{itemize}
-		\item Mark memory locations with $\{0,1\}$ to \alert{signal usage}
+		\item Mark memory locations with $\pmb{u} \in [0,1]^N$ to \alert{signal usage}
 		\item Manipulate signals during R/W operations to enable \alert{reallocation}
 		\item Generalization to \alert{unbounded memory}
 		\end{itemize}
@@ -536,7 +535,7 @@
 	\alert{"Free list" scheme}
 	\begin{align*}
 	\pmb{\psi}_t &= \prod\limits_{i=1}^R (\pmb{1} - \pmb{\phi}_t^iw_{t-1}^{r,i}) \tag{\alert{memory retention}}\\
-	u_t &= (\pmb{u}_{t-1} + \pmb{w}_{t-1}^w + \pmb{u}_{t-1} \circ \pmb{w}_{t-1}^w) \circ \pmb{\psi}_t \tag{\alert{usage tracking}}\\
+	u_t &= (\pmb{u}_{t-1} + \pmb{w}_{t-1}^w - \pmb{u}_{t-1} \circ \pmb{w}_{t-1}^w) \circ \pmb{\psi}_t \tag{\alert{usage tracking}}\\
 	\end{align*}
 	
 	\pause
@@ -548,52 +547,85 @@
 \end{frame}
 
 \begin{frame}{Memory Adressing: Temporal Linking}
-
+	\alert{Read modes}: $\pmb{\pi}_t^i \in \mathcal{S}_3$\\
+	
+	\pause
+	\alert{Temporal Transition} $\pmb{L}_t \in [0,1]^{N\times N}$
+	\[
+	\pmb{L}[i,j] = \underbrace{(1 - w_t^W[i] - w_t^W[j])\pmb{L}_{t-1}[i,j]}_{\text{\tiny{{Part of last transition}}}} + \underbrace{w_t^w[i]w_{t-1}^w[j]}_{\text{\tiny{Current transition}}}
+%	\pmb{p}_t = (1 - \sum\limits_{i}\pmb{w}_t^W[i])\pmb{p}_{t-1} + \pmb{w}_t^W
+	\]
+	
+	\pause
+	\alert{Mode Interpolation}
+	\[
+	\pmb{w}_t^{r,i} = 
+					\underbrace{\pmb{\pi}_t^i[1]L\pmb{w}_t^{r,i}}_{\text{\tiny{Forward shift}}} + 
+					\underbrace{\pmb{\pi}_t^i[2]\pmb{w}_t^{r,i}}_{\text{\tiny{No shift}}} + 
+					\underbrace{\pmb{\pi}_t^i[3]L^\top\pmb{w}_t^{r,i}}_{\text{\tiny{Backward shift}}} 
+	\]
 \end{frame}
 
-\begin{frame}{Further Reading}
+
+\begin{frame}{Conclusion}
+	\alert{Recap}\\
+	We can simulate computation and expand upon it by using differentiable, continuous operations.
+	
+	\pause
+	\alert{Takeaway}\\
+	We can automatically infer simple functions over complex data structures in the form of \alert{probability distributions}, just by using examples!\\
+\end{frame}
+
+\begin{frame}{Appendix: LSTM Equations}
+
+%	\begin{align}
+%	\ii_t^l &= \zeta_i(\mathcal{I}) \tag{\alert{input gate}}\\
+%	\ff_t^l &= \zeta_f(\mathcal{I})	\tag{\alert{forget gate}}\\
+%	\Cc_t^l &= \ff_t^l\Cc_{t-1}^l + \ii_t^l\zeta_c(\mathcal{I}) \tag{\alert{memory cell}}\\
+%	\oo_t^l &= \zeta_o(\mathcal{I})	\tag{\alert{output gate}}\\
+%	\hh_t^l &= \oo_t^l\zeta_h(\Cc_t^l)		\tag{\alert{hidden layer}}
+%	\end{align}
+%	\nonumber \\ 
+%	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
+%	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
+%	\end{align}
+	\begin{align}
+	\ii_t^l &= \sigma(W_i^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_i^l)   \tag{\alert{input gate}}\\
+	\ff_t^l &= \sigma(W_f^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_f^l)	\tag{\alert{forget gate}}\\
+	\Ss_t^l &= \ff_t^l\Ss_{t-1}^l + \ii_t^ltanh(W_s^l[\xx_t;\hh_{t_1}^l;\hh_t^{l-1}] + \bb_s^l)		\tag{\alert{state}}\\
+	\oo_t^l &= \sigma(W_o^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_o^l)		\tag{\alert{output gate}}\\
+	\hh_t^l &= \oo_t^ltanh(\Ss_t^l)		\tag{\alert{hidden}}\\
+	\nonumber \\ 
+	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
+	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
+	\end{align}
+\end{frame}
+
+\begin{frame}{Appendix: Further Reading}
+	\begin{minipage}{0.49\textwidth}
+	\underline{\alert{Neural Architectures}}
 	\begin{itemize}
-	\item \alert{Neural Turing Machines} (Graves, Wayne, Danihelka)
-	\item \alert{Entity Networks} (Henaff, Weston, Szlam, Bordes, LeCun)
-	\item \alert{End-to-End Memory Networks} (Sukhbaatar, Szlam, Weston, Fergus)	
-	\item \alert{Jointly Learning to Align and Translate} (Bahdanau, Cho, Bengio)
+	\item \alert{Learning to Forget}\\ (Gers, Schmidhuber, Cummins)
+	\item \alert{Neural Turing Machines}\\ (Graves, Wayne, Danihelka)
+	\item \alert{Entity Networks}\\ (Henaff, Weston, Szlam, Bordes, LeCun)
+	\item \alert{End-to-End Memory Networks}\\ (Sukhbaatar, Szlam, Weston, Fergus)	
+	%\item \alert{Jointly Learning to Align and Translate}\\ (Bahdanau, Cho, Bengio)
+	%\item \alert{Principles of Probabilistic Programming Languages} (Goodman)
+	%\item \alert{Backprop as a Functor} (Fong, Spivak, Tuyéras)
+	%\item \alert{Formal Methods for Probabilistic Programming} (Selsam, Liang, Dill)
+	\end{itemize}
+	\end{minipage}
+	\begin{minipage}{0.49\textwidth}
+	\begin{itemize}	
+	\item \alert{Jointly Learning to Align and Translate}\\ (Bahdanau, Cho, Bengio)
+	\end{itemize}
+	\underline{\alert{Probabilistic Programming}}
+	\begin{itemize}
 	\item \alert{Principles of Probabilistic Programming Languages} (Goodman)
 	\item \alert{Backprop as a Functor} (Fong, Spivak, Tuyéras)
 	\item \alert{Formal Methods for Probabilistic Programming} (Selsam, Liang, Dill)
 	\end{itemize}
-\end{frame}
-
-\begin{frame}{Conclusion}
-	\alert{Takeaway}\\
-	We can automatically infer simple functions over complex data structures in the form of \alert{probability distributions}, just by using examples!\\
-		
-	\pause
-	\center	\alert{Thank you!}
-\end{frame}
-
-\begin{frame}{LSTM: State Equations}
-
-	\begin{align}
-	\ii_t^l &= \zeta_i(\mathcal{I}) \tag{\alert{input gate}}\\
-	\ff_t^l &= \zeta_f(\mathcal{I})	\tag{\alert{forget gate}}\\
-	\Cc_t^l &= \ff_t^l\Cc_{t-1}^l + \ii_t^l\zeta_c(\mathcal{I}) \tag{\alert{memory cell}}\\
-	\oo_t^l &= \zeta_o(\mathcal{I})	\tag{\alert{output gate}}\\
-	\hh_t^l &= \oo_t^l\zeta_h(\Cc_t^l)		\tag{\alert{hidden layer}}
-	\end{align}
-%	\nonumber \\ 
-%	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
-%	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
-%	\end{align}
-%	\begin{align}
-%	\ii_t^l &= \sigma(W_i^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_i^l)   \tag{\alert{input gate}}\\
-%	\ff_t^l &= \sigma(W_f^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_f^l)	\tag{\alert{forget gate}}\\
-%	\Ss_t^l &= \ff_t^l\Ss_{t-1}^l + \ii_t^ltanh(W_s^l[\xx_t;\hh_{t_1}^l;\hh_t^{l-1}] + \bb_s^l)		\tag{\alert{state}}\\
-%	\oo_t^l &= \sigma(W_o^l[\xx_t;\hh_{t-1}^l;\hh_t^{l-1}]+\bb_o^l)		\tag{\alert{output gate}}\\
-%	\hh_t^l &= \oo_t^ltanh(\Ss_t^l)		\tag{\alert{hidden}}\\
-%	\nonumber \\ 
-%	\pmb{\upsilon}_t &= W_y[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{output vector}}\\
-%	\pmb{\xi}_t &= W_{\xi}[\hh_t^1;\dots;\hh_t^L]		\tag{\alert{interface vector}}
-%	\end{align}
+	\end{minipage}
 \end{frame}
 
 \end{document}
