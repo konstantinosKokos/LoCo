@@ -191,7 +191,7 @@
 	\vspace{10pt}
 	\centering
 	%\small \alert{$y=g(h),\ h=f(x)$}\\
-	\small $NN: \pmb{x}_{t_i} \mapsto \pmb{y}_{t_i}$\\
+	\small $NN: \pmb{x}_{t} \mapsto \pmb{y}_{t}$\\
 	\alert{No memory}
 	\end{minipage}
 	\pause
@@ -243,7 +243,7 @@
 	\vspace{10pt}
 	\centering
 	%\small{ \alert{$h(t)=f([x(t); h(t-1)])$}}\\
-	\small{ $RNN: \pmb{x}_{t_0} \otimes \pmb{x}_{t_1} \otimes \dots \otimes \pmb{x}_{t_i} \mapsto \pmb{y}_{t_i}$}\\
+	\small{ $RNN: \pmb{x}_{0} \otimes \pmb{x}_{1} \otimes \dots \otimes \pmb{x}_{t} \mapsto \pmb{y}_{t}$}\\
 	\alert{Finite memory}
 	\end{minipage}
 	\pause
@@ -287,7 +287,7 @@
 	\]
 	and producing output:
 	\[
-	(\pmb{\upsilon}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_t];\vartheta) \tag{\text{\alert{entire sequence}}}
+	(\pmb{y}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_t];\vartheta) \tag{\text{\alert{entire sequence}}}
 	\]
 	where \alert{$\mathcal{N}$} a set of state equations and \alert{$\vartheta$} their trainable parameters.
 \end{frame}
@@ -446,15 +446,15 @@
 \begin{frame}{Controller: Outputs}
 	\topskip0pt
 	\[
-	(\pmb{\upsilon}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_T];\vartheta)
+	(\pmb{y}_t,\pmb{\xi}_t)=\mathcal{N}([\xx_1;\dots;\xx_T];\vartheta)
 	\]
 	\vspace{5pt}
 	
 	\pause
-	\alert{Intermediate output} $\pmb{\upsilon}_t = W_y[\hh_t^1;\dots;\hh_t^L]$
-	\[
-	\pmb{y}_t = \pmb{\upsilon}_t + W_R[\pmb{r}_t^1;\dots;\pmb{r}_t^R] \tag{\alert{Memory-conditioning}}
-	\]
+	\alert{User output} $\pmb{y}_t = W_y[\hh_t^1;\dots;\hh_t^L]$
+%	\[
+%	\pmb{y}_t = \pmb{\upsilon}_t + W_R[\pmb{r}_t^1;\dots;\pmb{r}_t^R] \tag{\alert{Memory-conditioning}}
+%	\]
 	
 	\pause
 	\alert{Interface vector} $\pmb{\xi}_t = W_\xi[\hh_t^1;\dots;\hh_t^L]$
@@ -566,6 +566,24 @@
 	\]
 \end{frame}
 
+\begin{frame}{Experiments}
+	\begin{itemize}
+	\pause
+	\item \alert{Language Tasks}
+	\begin{itemize}
+	\item[] Inference
+	\item[] Logical Reasoning
+	\end{itemize}
+	\pause
+	\item \alert{Graph Tasks}
+	\begin{itemize}
+	\item[] Network Traversal
+	\item[] Policy Learning
+	\end{itemize}
+	\pause
+	\item \alert{Block Puzzles}
+	\end{itemize}
+\end{frame}
 
 \begin{frame}{Conclusion}
 	\alert{Recap}\\
@@ -574,6 +592,11 @@
 	\pause
 	\alert{Takeaway}\\
 	We can automatically infer simple functions over complex data structures in the form of \alert{probability distributions}, just by using examples!\\
+\end{frame}
+
+\begin{frame}{Thank you!}
+	\centering
+	\alert{Questions?}
 \end{frame}
 
 \begin{frame}{Appendix: LSTM Equations}
