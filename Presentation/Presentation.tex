@@ -260,7 +260,7 @@
 	\begin{enumerate}
 	\item \alert{Content Lookup}\\
 		\begin{itemize}
-		\item \alert{Attention} over memory defined by weightings $w \in \mathcal{S}^N$
+		\item \alert{Attention} over memory defined by weightings $w \in \mathcal{S}_N$
 		\item Compare controller output with memory objects (\alert{auto-associative memory})
 		\item Allow partial matches  (\alert{pattern completion})
 		\end{itemize}
@@ -510,7 +510,7 @@
 \end{frame}
 
 \begin{frame}{Memory Adressing: R/W}
-	\alert{Attention} dictated by weightings $\pmb{w} \in \mathcal{S}^N$\\
+	\alert{Attention} dictated by weightings $\pmb{w} \in \mathcal{S}_N$\\
 	\alert{Erase vector} $\pmb{e}_t \in [0,1]^W$\\
 	\alert{Write vector} $\pmb{v}_t \in \mathbb{R}^W$\\
 
@@ -528,7 +528,7 @@
 \end{frame}
 
 \begin{frame}{Memory Adressing: Dynamic Allocation}
-	\alert{Free gates} $\pmb{\phi}_t^i \in [0,1]^W$\\
+	\alert{Free gates} $\pmb{\phi}_t^i \in [0,1]$\\
 	\alert{Allocation gate} $g_t^a \in [0,1]$\\
 	\alert{Write gate} $g_t^w \in [0,1]$\\
 	
