@@ -1,0 +1,246 @@
+\documentclass[]{article}
+\usepackage[a4paper]{geometry}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{mathabx}
+\usepackage{graphics}
+%\usepackage{mathtools}
+\usepackage{tikz}
+\usepackage{array}
+\usepackage{proof}
+\usepackage{hyperref}
+\definecolor{linkcolour}{rgb}{0,0.2,0.6}
+\hypersetup{colorlinks,breaklinks,urlcolor=linkcolour,linkcolor=linkcolour}
+\usepackage{subcaption}
+
+\begin{document}
+\author{Konstantinos Kogkalidis [6230067]}
+\title{Recent Advancements in Neural Computation: \\
+\large Differentiable Neural Computers and End-To-End Memory Networks}
+\maketitle
+
+\section{Introduction}
+In the last decade, neural networks have considerably revolutionized computation and artificial intelligence. Neural networks have been setting new benchmarks in tasks from a broad range of fields, including computer vision, natural language processing and pattern recognition; many of these tasks previously unsolved, and some of these benchmarks surpassing human-level performance. Until recently, this astounding potential has for the most part been limited to tasks involving sensory processing and representation learning. Memory-centric tasks, i.e. tasks requiring data storage and retrieval, have however proven difficult for neural networks to model. This paper serves as a literature review of two recent approaches towards bypassing this limitation, namely Differentiable Neural Computers (DNCs) and End-to-End Memory Networks. The rest of this section will briefly introduce some important background concepts, before the models' details are examined in sections 2 and 3, respectively. Section 4 provides a short discussion and a comparative analysis on the two approaches, and section 5 presents some concluding remarks.
+
+A particularly interesting subclass of neural networks are \textit{Recurrent Neural Networks} (RNNs). Unlike traditional networks, which accept a fixed-size input vector and produce a fixed-size output vector over a finite number of computational steps, RNNs instead operate on sequences of vectors. This additional axis is captured by allowing the RNN to accept one vector at a time and construct an intermediate representation of it, which then combines with the next input vector to affect the computation of the next such representation (Fig.\ref{fig:1}). This elegant addition accounts for a drastic improvement in the representational capacity of the network. Whereas a simple net acts as a fixed function, a RNN acts as a program operating on sequences of inputs. Under this viewpoint, the RNN's hidden representation can be perceived as the program's internal variables, updating as new inputs are received and affecting the computation as it progresses.
+
+\begin{figure}[h!]
+\begin{minipage}{0.5\textwidth}
+	\centering
+	\begin{tikzpicture}[scale=0.5]
+		\foreach \y /\alph/\name in {
+			0/x1/$x_1$,
+		  	-1/x2/$x_2$,
+		  	-2/x3/$x_3$,
+		  	-4/xM/$x_M$
+		 }{
+		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (0,\y) {\tiny \textcolor{black}{\name}};
+		 }
+		 \node (x..) at (0,-3) {\tiny {\vdots}};
+		 \foreach \y /\alph/\name in {
+			1/h1/$h_1$,
+		  	0/h2/$h_2$,
+		  	-1/h3/$h_3$,
+		  	-5/hN/$h_N$
+		 }{
+		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (4,\y) {\tiny \textcolor{black}{\name}};
+		 }
+		 \node (h..) at (4,-3) {\tiny {\vdots}};
+		 \foreach \y /\alph/\name in {
+			0/y1/$y_1$,
+		  	-1/y2/$y_2$,
+		  	-2/y3/$y_3$,
+		  	-4/yP/$y_P$
+		 }{
+		 	\node[circle, draw=gray!90,inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (8,\y) {\tiny \textcolor{black}{\name}};
+		 }
+		 \node (y..) at (8,-3) {\tiny {\vdots}};
+		 \foreach \x in {x1, x2, x3, xM}
+		 {\foreach \h in {h1, h2, h3, hN}
+		 {\draw (\x) edge[gray!90] (\h);}}
+		 \foreach \x in {h1, h2, h3, hN}
+		 {\foreach \y in {y1, y2, y3, yP}
+		 {\draw (\x) edge[gray!90] (\y);}}
+	\end{tikzpicture}
+	\subcaption{Simple Neural Net}
+	\end{minipage}
+	\begin{minipage}{0.5\textwidth}
+	\centering
+	\begin{tikzpicture}[scale=.5]
+		\foreach \y /\alph/\name in {
+			0/x1/$x_1$,
+		  	-1/x2/$x_2$,
+		  	-2/x3/$x_3$,
+		  	-4/xM/$x_M$
+		 }{
+		% 	\node[] (\alph) at (0,\y) {\name};
+		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (0,\y) {\tiny \textcolor{black}{\name}};
+		 }
+		 \node (x..) at (0,-3) {\tiny {\vdots}};
+		 \foreach \y /\alph/\name in {
+			1/h1/$h_1$,
+		  	0/h2/$h_2$,
+		  	-1/h3/$h_3$,
+		  	-5/hN/$h_N$
+		 }{
+		 	\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=gray!20] (\alph) at (4,\y) {\tiny \textcolor{black}{\name}};
+		 }
+		 \node (h..) at (4,-3) {\tiny {\vdots}};
+		 \foreach \y /\alph/\name in {
+			0/y1/$y_1$,
+		  	-1/y2/$y_2$,
+		  	-2/y3/$y_3$,
+		  	-4/yP/$y_P$
+		 }{
+		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (8,\y) {\tiny \textcolor{black}{\name}};
+		 }
+		 \node (y..) at (8,-3) {\tiny {\vdots}};
+		 \foreach \x in {x1, x2, x3, xM}
+		 {\foreach \h in {h1, h2, h3, hN}
+		 {\draw (\x) edge[gray!90] (\h);}}
+		 \foreach \x in {h1, h2, h3, hN}
+		 {\foreach \y in {y1, y2, y3, yP}
+		 {\draw (\x) edge[gray!90] (\y);}}
+		 \draw (h1.east) [->, densely dotted, thick, black] .. controls +(0.8,0.8) and +(-0.8,0.8) .. (h1.west);
+		 \draw (h1.east) [->, densely dotted, thick, black] .. controls +(0.4,-0.8) and +(-0.4,0.8) .. (h2.west);
+		 \draw (h1.east) [->, densely dotted, thick, black] .. controls +(1,-1.6) and +(-0.6,0.4) .. (h3.west);
+		 \draw (h1.east) [->, densely dotted, thick, black] .. controls +(2,-2) and +(-2,2) .. (hN.west);
+\end{tikzpicture}
+	\subcaption{Recurrent Neural Network}
+	\end{minipage}
+	\caption[Hello world]
+	{\small \textit{Comparison between a simple neural network and a RNN. (a) The simple network applies two transformations $\pmb{x} \mapsto \pmb{h}$ and $\pmb{h} \mapsto \pmb{y}$, the composition of which can be seen as a function $\pmb{x} \mapsto \pmb{y}$. (b) The recurrent network allows through-time connections, depicted with the dotted lines, such that $\pmb{x}_t \times \pmb{h}_{t-1} \mapsto \pmb{h}_t$. The output then becomes a function of the full sequence of inputs received: $\underbrace{\pmb{x}_0 \times \pmb{x}_1 \times \dots \times \pmb{x}_t}_{\text{Sequence Length}} \mapsto \pmb{y}_t$.}\label{fig:1}}
+\end{figure}
+
+Although RNNs have been introduced more than three decades ago, their potential was only recognized recently, as the availability of computational power surged. Their ability to model sequential patterns and their interesting properties have garnered a lot of attention, yet they still suffer from two major drawbacks. The first relates to the statefulness achieved by their intermediate representation; even though it is distributed, the hidden vector's size is finite and fixed, therefore capable of only limited, lossy storage. The second is a more intrinsic one and is not only tied to RNNs but neural networks in general; there is no separation between memory and processing, as each neuron is simultaneously a minimal storage unit and a computational one. Although appealing from a biological perspective, this goes against the von Neumann model and our programming paradigm. 
+
+A series of advancements has seeked to enhance RNNs with stronger memory management. Starting with the introduction of the \textit{Long Short-Term Memory}, which permits finite storage over arbitrary long computations, research in RNNs has bloomed towards many different directions. One particularly exciting recent advancement is the so-called \textit{attentional interface}, which allows a network to selectively shift its focus on particular indices over a set of dimensions of an arbitrary tensor, thus enabling content-based adressing. The implications of this seemingly simple trick are tremendous; when employing fully differentiable attention (soft-attention), a network can learn how to pick out and combine relevant elements out of a (potentially very large) tensor, instead of lossily encoding it. This translates to arbitrary information retrieval; in other words, the same representations can now have different effects on the computation depending on the present context, similar to how a computer program would refer only to the variables dictated by its currently run instruction. Since its inception, attention has been a key-concept in many influential publication; the creative liberty it is offering, in terms of new potential operations, has also paved the way for architectures which decouple storage from computation. Such architectures, including but not limited to the two presented in this paper, utilize large external matrices and employ attention to perform read and write operations on them.
+
+\section{Notation and Preliminaries}
+Given the technical nature of the works presented, it is important to establish a notational common ground. The $(N-1)$-simplex, i.e. the set of all variations of $N$ non-negative scalars that sum up to 1, will be indicated by $\mathcal{S}^N$. A vector will be denoted by a boldface lower letter, e.g. $\pmb{v}$, whereas a matrix will be indicated by a boldface capital letter, e.g. $\pmb M$. Vector concatenation, i.e. merging together N vectors in the order they are given to a create a new, long vector is denoted by a bracketing of vectors separated by the semicolon, e.g. $[\pmb{x}; \pmb{y}; \pmb{z}]$ reads as the concatenation of $\pmb x$, $\pmb y$ and $\pmb z$. When using the comma rather than the semicolon, the notation instead presents a sequence of vectors, e.g. $[\pmb a _1, \dots ,\pmb a _N]$ denotes a sequence of vectors $\pmb a _1$ to $\pmb a _N$. A subscript on a vector or matrix is used to index a single temporal instance from a sequence of such vectors or matrices, e.g. $\pmb{a}_i$ refers to the instance at timestep $i$ of the time-varying vector sequence $[\pmb a _1 , \dots ]$. It should not be confused with intra-vector or matrix indexing, i.e. singling out particular elements out of a vector or matrix, which is denoted by $\pmb a [i]$ and reads as the i-th element of a vector $\pmb a$. Finally, a reminder that a matrix $\pmb M \in \mathbb{R}^{K\times L}$ can be seen as a linear map $M: \mathbb{R}^L \to \mathbb{R}^K$; linear application of $\pmb v \in \mathbb{R}^V $ on $\pmb M \in \mathbb{R}^{M \times V}$ (or matrix-vector multiplication) is thus simply denoted $\pmb {Mv}$.
+
+
+\section{Differentiable Neural Computers}
+\subsection{Description}
+Inspired by the von Neumann architecture, DNCs model computation as the interfacing between two units; a RNN controller and an external memory matrix, functioning analogously to the CPU and the RAM, respectively. The memory matrix can be adressed using soft attention mechanisms, allowing selective reading and writing. As both the controller and the interfacing are differentiable, the full architecture is end-to-end differentiable, essentially allowing it to be trained purely with data and minimal human supervision. As the system is already equiped with the necessary tools to simulate traditional computation, i.e. adressing mechanisms, information storage and retrieval, logical flows and arithmetic processing, a DNC in training is  learning the instructions of a program rather than the parameters of a function, and a trained DNC should be able to mimic the behavior of a traditionally hand-written program.
+
+\subsection{Architecture}
+\paragraph{Overview} 
+A differentiable neural computer consists of two main components; a recurrent neural network \textbf{controller network} and an external \textbf{memory matrix} $M \in \mathbb{R}^{N\times W}$. The matrix contains $N$ memory adresses, each of size $W$, which can be read by the controller through $R$ \textit{read heads}, or written to by one \textit{write head}. At timestep t, the system as a whole receives input in the form of a vector, $\pmb{x}_t \in \mathbb{R}^X$, and produces output in the form of a vector, $\pmb{y}_t \in \mathbb{R}^Y$. The input may be samples from any dataset environment, e.g. some encoding of sensory signals. The output can either represent an approximation for a target vector $\pmb{z}_t \in \mathbb{R}^Y$ (in the supervised learning setting) or encode some action (in the reinforcement learning setting).
+\paragraph{Controller}
+This input is passed to the controller network, alongside the contents of each of the read heads as drawn from the memory at the previous time instance: $\pmb{r}_{t-1}^{i},\ i \in 1, \dots ,R$. The concatenation of the above yields a vector $\pmb{\chi}_t \in \mathbb{R}^{X + RW}: \pmb{\chi}_t = [\pmb{x}_t; \pmb{r}_{t-1}^1; \dots \pmb{r}_{t-1}^R ] $. A full sequence of such inputs, $[\pmb{\chi}_1,\dots ,\pmb{\chi}_T]$ is passed through a set of dynamic state equations $\mathcal{N}$, as implemented by the controller, that yield back two intermediate outputs, $\pmb{\upsilon }_T$ and $\pmb{\xi}_T$, such that $\mathcal{N}([\pmb{\chi}_1,\dots,\pmb{\chi}_T]) = (\pmb{\upsilon}_T,\ \pmb{\xi}_T)$. The exact implementation of $\mathcal{N}$ is not essential to the architecture as a whole; $\mathcal{N}$ may be any neural network. Deep long short-term memory networks are the state of the art in sequential modeling, and therefore make for a reasonable choice, since the controller needs to be expressive enough to handle potentially complex data streams.
+
+Out of the vectors $(\pmb{\upsilon}_t,\ \pmb{\xi}_t)$ returned by the controller, the first corresponds to the intermediate user-level output. Before conveying this to the user, the system is allowed one last peak at the memory. This is necessitated by the fact that the read head contents at the final timestep of the computation cannot be used in $\mathcal{N}$, as this would introduce circular dependencies in the architecture's computational graph. The memory conditioning process is therefore done outside the controller, as captured by a simple trainable linear map \begin{equation}
+\notag
+\pmb{y}_t = \pmb{\upsilon}_t + \pmb{W}_R[\pmb{r}_{t}^1;\dots;\pmb{r}_{t}^R]
+\label{eqn:Memory Conditioning}
+\end{equation}
+The result of the operation is the current instance of the user-level output stream, $\pmb{y}_t$, which represents what the DNC is yielding back to the world while computing. 
+
+The second controller output, $\pmb{\xi}_t$, corresponds to the \textbf{interface vector}, which defines the controller's interaction with the memory. The interface vector can be subvidided into multiple smaller components, each one of which is responsible for a specific subtask related to memory adressing. Different activation functions are applied to these components, so as to enforce their distributions to fall within their task-specific domain. Post activation application, we have the following vectors and scalars:
+
+\vspace{10pt}
+\hspace{-40pt}
+\begin{minipage}{0.6\textwidth}
+\begin{itemize}
+\item Read keys: \{$\pmb{k}_t^{r,i} \ \in \mathbb{R}^W, \ \forall i \in \{1,\dots,R\}$\}
+\item Read strengths: \{$\beta_t^{r,i} \ \in [1, \infty) \ \forall i \in \{1,\dots,R\}$\}
+\item Write key: $\pmb{k}_t^w \ \in \mathbb{R}^W$
+\item Write strength: $\beta_t^w \ \in [1, \infty)$
+\item Erase vector: $\pmb{e}_t \ \in [0,1]^W$
+\end{itemize}
+\end{minipage}
+\hspace{-20pt}
+\begin{minipage}{0.5\textwidth}
+\begin{itemize}
+\item Write vector: $\pmb{v}_t \ \in \mathbb{R}^W$
+\item R free gates: \{$f_t^i \ \in [0,1] \ \forall i \in \{1,\dots,R\}$\}
+\item Allocation gate: $g_t^a \ \in [0,1]$
+\item Write gate: $g_t^w \ \in [0,1]$
+\item Read modes: \{$\pmb{\pi}_t^i \ \in \mathcal{S}^3 \ \forall i \in \{1,\dots,R\}$\}
+\end{itemize}
+\end{minipage}
+\vspace{10pt}
+
+The remainder of this section is dedicated to examining the role of each of these components.
+
+\paragraph{Content-based Addressing} 
+DNCs perform content-based addressing via \textbf{autoassociative memory}. Autoassociative memory is a strong mechanism of content-lookup, that allows a system to navigate rich data structures and selectively retrieve relevant memory objects when only shown parts thereof. The implementation involves a \textit{matching function} $\mathcal{D}: \mathbb{R}^W \times \mathbb{R}^W \to \mathbb{R}$, which is applied on a read/write key $\pmb{k}$, as given by the controller, and the contents of a memory address, $\pmb{M}[i,:]$, and returns a scalar indicating how similar these two are. Any metric of distance may be used as $\mathcal{D}$, but the most obvious choice is cosine similarity:
+ \[
+ \tag{Cosine Similarity}
+\mathcal{D}(\pmb{x}, \pmb{y}) = cos(\pmb{x},\pmb{y}) = \frac{\pmb{x} \cdot \pmb{y}}{||\pmb{x}|| \cdot ||\pmb{y}||}
+\]
+The controller may assign varying relative importance on different keys; this is accomplished by exponentially scaling the matches obtained by $\mathcal{D}$, using the strength vector associated with each key. These weighted matches are finally normalized by their sum, constraining the results within $\mathcal{S}^N$. The above are captured by a \textit{weighting function} $\mathcal{C}: \mathbb{R}^{N \times W} \times \mathbb{R}^W \times \mathbb{R} \to \mathbb{R}^N$, such that:
+\[
+\tag{Weighting Function}
+\mathcal{C}(\pmb{M},\pmb{k}, \beta)[i] = 
+\frac{ \mathcal{D}(\pmb{M}[i,:],\pmb{k})^{\beta} }
+{\sum\nolimits_{j=1}^N \mathcal{D}(\pmb{M}[j,:],\pmb{k})^{\beta}}
+\]
+
+This is a fully differentiable form of attention, which allows the controller to construct minimal representations of objects that it's looking for in the memory. The key benefit of such a process is its ability to perform partial matching or pattern completion; for instance, the controller may simply construct the beginning of a sequence (e.g. the identifier of a variable), and, upon finding its match, it can then retrieve the full sequence (e.g. the  value of that variable) back from the memory.
+
+The weighting function is used to obtain content-based weightings for both the read heads, denoted by $[\pmb{w}_t^{r,i},\dots,\pmb{w}_t^{r,R}]$, and the the write head, $\pmb{w}_t^w$. Given such weightings, a read head will contain a weighted average of the memory matrix:
+\[
+\tag{Memory Reading}
+\pmb{r}_t^i = \pmb{M}_t^{\top} \pmb{w}_t^{r,i} 
+\]
+Writing to the memory is also dictated by a similar operation, which must now be defined via a recurrency relation to take into account past memory contents as well as the erase and write vectors emitted by the controller:
+\[
+\tag{Memory Writing}
+\pmb{M}_t = \underbrace{\pmb{M}_{t-1} \circ (\pmb{1} - \pmb{w}_t^w \pmb{e}_t^\top)}_{\text{\scriptsize Partially erased past memory}} + \underbrace{\pmb{w}_t^w \pmb{v}_t^\top}_{\text{\scriptsize New memory}}
+\]
+
+\paragraph{Dynamic Allocation} Memory management is an integral part of any computer program. The DNC needs to be able to allocate and deallocate memory dynamically, according to the current execution's needs. This is achieved through a differentiable variation of the \textit{free-list scheme}. In its original form, the free-list scheme allows a system to keep track of unused memory blocks by connencting them with one another as a linked-list. Its adaptation for the purposes of the DNC is slightly more involved, as described next. Before writing to the memory, the controller emits a free gate, $f_t^i$, for each read head $i$, which controls to what extend a recently read memory address may be deallocated. From the latter , the \textit{retention vector} can be obtained as:
+\[
+\tag{Retention Vector}
+\pmb{\psi}_t = \prod\limits_{i=1}^{R}{(\pmb{1}-f_t^i \pmb{w}_t^{r,i})}
+\]
+
+The retention vector is a measure of how much each memory address needs to be retained. Its complement, the \textit{usage-tracking vector} $\pmb{u}_t$, annotates each memory address with a scalar so to as to signal how strongly it is being used. It is recursively defined as follows:
+\[
+\tag{Usage-tracking Vector}
+\pmb{u}_t = \underbrace{(\pmb{u}_{t-1} + \pmb{w}_{t}^{w} - \pmb{u}_{t-1} \circ \pmb{w}_t^{w})}_{\text{ \scriptsize Previous usage OR New write}} \circ \ \pmb{\psi}_t
+\]
+Contrary to first impressions, the above equation is quite intuitive. The parenthesized term sums the previous usage tracking vector with the current write weighting minus their dot product, acting as a real-valued variation of the logical OR function. A single element of this term, $\pmb{u}_t[i]$ would denote the pre-retention usage tracking of memory address $i$; it is close to $1$ if was either already in use, or just written to. Multiplied by its corresponding element of the retention vector, it can then be (partially) deallocated.
+ 
+Finally, the free-list $\pmb{\phi}_t$ is defined as the sorted list of indices of the usage-tracking vector, i.e. $\pmb{\phi}_t[i]$ is the index of the i-th least used address in the memory. The \textit{allocation vector} $\pmb{a}_t$ is then  used to annotate the availability of each memory address:
+\[
+\tag{Allocation Vector}
+\label{eqn:Allocation Vector}
+\pmb{a}_t[\pmb{\phi}_t[j]] = (1 - \pmb{u}_t[\pmb{\phi}_t[j]])\prod\limits_{i=1}^{j-1}{\pmb{u}_t[\pmb{\phi}_t[i]]} \ \in [0,1]
+\]
+
+To showcase the functionality of this last equation, we will consider a simple example. Let $\pmb{u}_t = [0.4, 0.8, 0.1]$ be the usage-tracking vector of a 3-address memory at timestep $t$. Then the free-list would be $\pmb{\phi}_t = [3, 1, 2]$. Iterating over \ref{eqn:Allocation Vector} we then get:
+\begin{align*}
+\pmb{a}_t[\pmb{\phi}_t[1]] &= \pmb{a}_t[3] = (1-\pmb{u}_t[3]) \cdot 1 = (1-0.1) =0.9 \\
+\pmb{a}_t[\pmb{\phi}_t[2]] &= \pmb{a}_t[1] = (1-\pmb{u}_t[1]) \cdot \pmb{u}_t[3] = (1 - 0.4) \cdot 0.1 = 0.06\\
+\pmb{a}_t[\pmb{\phi}_t[3]] &= \pmb{a}_t[2] = (1-\pmb{u}_t[2]) \cdot \pmb{u}_t[3] \cdot \pmb{u}_t[1] = (1-0.8) \cdot 0.1 \cdot 0.4 = 0.008
+\end{align*}
+Therefore $\pmb{a}_t = [0.06, 0.08, 0.9]$. 
+
+Having the allocation vector, the controller can now shift its attention towards unused memory addresses using the allocation gate $g_t^a$. The shifted weightings are then gated by the write gate $g_t^w$, which acts as a memory-locking mechanism :
+\[
+\tag{Allocation Shift}
+\underbrace{\pmb{w}_t^w}_{\text{\scriptsize Updated weights}} = \underbrace{g_t^w}_{\text{Write-lock}} \quad [ \hspace{-10pt} \underbrace{g_t^a \pmb{a}_t}_{\text{\scriptsize Shifted weights}} + \underbrace{(1-g_t^w) \ \pmb{w}_t^w}_{\text{\scriptsize Writeable original weights}} \hspace{-15pt}]
+\]
+
+\paragraph{Temporal Linking} One last mechanism of memory addressing employed by DNCs is temporal linking. Temporal linking is necessary in order to perform sequential retrieval, when sequences are stored in disparate, non-contiguous blocks. The key-element of the process is a temporal transition matrix $\pmb{L} \in [0,1]^{N\times N}$, which keeps track of the temporal order by which memory addresses have been written to. More conretely, $\pmb{L}[i,j]$ is close to $1$ if $j$ was strongly written to after $i$, or close to $0$ otherwise. $\pmb{L}$ is again defined via a recurrency relation; a slightly simplified version of the one in the original paper is presented below, for the sake of brevity and clarity.
+\[
+\tag{Temporal Update}
+\pmb{L}[i,j] = \underbrace{(1 - \pmb{w}_t^w[i] - \pmb{w}_t^w[j]) \pmb{L}_{t-1}[i,j]}_{\text{\scriptsize Part of last transition}} + \underbrace{\pmb{w}_{t-1}^w[i] \pmb{w}_{t}^w[j]}_{\text{\scriptsize New transition}}
+\]
+The above equation is also quite intuitive. The first term of the addition allows the transition value between $i$ and $j$ to propagate through time. The old transition, $\pmb{L}_{t-1}[i,j]$ is complentary to the amount of writing performed in these addresses; even if we had a transition in the past, it no longer holds if either $i$ or $j$ were just written to. On the other hand, if $i$ was written to in the previous timestep and $j$ was written to in the current timestep, then a new transition is instantiated. This is captured by the second term of the addition. 
+
+\paragraph{Mode Interpolation} The temporal transition matrix can be used as another means of attention; this time, the controller can shift its attention over the memory through time. $\pmb{L}_t \pmb{w}$ shifts the weightings $\pmb{w}$ forwards in time, whereas $\pmb{L}_t^\top \pmb{w}$ shifts them backwards. The degree to which the controller performs forward, backward, or no temporal iteration is dictated by the read modes $\pmb{\pi}_t^i$ for each read head $i$:
+\[
+\tag{Temporal Shift}
+\pmb{w}_t^{r,i} = 
+\underbrace{\pmb{\pi}_t^i[1] \pmb{L}_t\pmb{w}_t^{r,i}}_{\text{\scriptsize Forward shift}} + 
+\underbrace{\pmb{\pi}_t^i[2] \pmb{w}_t^{r,i}}_{\text{\scriptsize No shift}} + 
+\underbrace{\pmb{\pi}_t^i[3] \pmb{L}_t^\top \pmb{w}_t^{r,i}}_{\text{\scriptsize Backward shift}}
+\]
+
+\section{Conclusion}
+
+\end{document}
