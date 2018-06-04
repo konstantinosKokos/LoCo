@@ -128,7 +128,7 @@ Inspired by the von Neumann architecture, DNCs model computation as the interfac
 \paragraph{Overview} 
 A differentiable neural computer consists of two main components; a recurrent neural network \textbf{controller network} and an external \textbf{memory matrix} $M \in \mathbb{R}^{N\times W}$. The matrix contains $N$ memory adresses, each of size $W$, which can be read by the controller through $R$ \textit{read heads}, or written to by one \textit{write head}. At timestep t, the system as a whole receives input in the form of a vector, $\pmb{x}_t \in \mathbb{R}^X$, and produces output in the form of a vector, $\pmb{y}_t \in \mathbb{R}^Y$. The input may be samples from any dataset environment, e.g. some encoding of sensory signals. The output can either represent an approximation for a target vector $\pmb{z}_t \in \mathbb{R}^Y$ (in the supervised learning setting) or encode some action (in the reinforcement learning setting).
 \paragraph{Controller}
-This input is passed to the controller network, alongside the contents of each of the read heads as drawn from the memory at the previous time instance: $\pmb{r}_{t-1}^{i},\ i \in 1, \dots ,R$. The concatenation of the above yields a vector $\pmb{\chi}_t \in \mathbb{R}^{X + RW}: \pmb{\chi}_t = [\pmb{x}_t; \pmb{r}_{t-1}^1; \dots \pmb{r}_{t-1}^R ] $. A full sequence of such inputs, $[\pmb{\chi}_1,\dots ,\pmb{\chi}_T]$ is passed through a set of dynamic state equations $\mathcal{N}$, as implemented by the controller, that yield back two intermediate outputs, $\pmb{\upsilon }_T$ and $\pmb{\xi}_T$, such that $\mathcal{N}([\pmb{\chi}_1,\dots,\pmb{\chi}_T]) = (\pmb{\upsilon}_T,\ \pmb{\xi}_T)$. The exact implementation of $\mathcal{N}$ is not essential to the architecture as a whole; $\mathcal{N}$ may be any neural network. Deep long short-term memory networks are the state of the art in sequential modeling, and therefore make for a reasonable choice, since the controller needs to be expressive enough to handle potentially complex data streams.
+The aforementioned input is passed to the controller network, alongside the contents of each of the read heads as drawn from the memory at the previous time instance: $\pmb{r}_{t-1}^{i},\ i \in 1, \dots ,R$. The concatenation of the above yields a vector $\pmb{\chi}_t \in \mathbb{R}^{X + RW}: \pmb{\chi}_t = [\pmb{x}_t; \pmb{r}_{t-1}^1; \dots \pmb{r}_{t-1}^R ] $. A full sequence of such inputs, $[\pmb{\chi}_1,\dots ,\pmb{\chi}_T]$ is passed through a set of dynamic state equations $\mathcal{N}$, as implemented by the controller, that yield back two intermediate outputs, $\pmb{\upsilon }_T$ and $\pmb{\xi}_T$, such that $\mathcal{N}([\pmb{\chi}_1,\dots,\pmb{\chi}_T]) = (\pmb{\upsilon}_T,\ \pmb{\xi}_T)$. The exact implementation of $\mathcal{N}$ is not essential to the architecture as a whole; $\mathcal{N}$ may be any neural network. Deep long short-term memory networks are the state of the art in sequential modeling, and therefore make for a reasonable choice, since the controller needs to be expressive enough to handle potentially complex data streams.
 
 Out of the vectors $(\pmb{\upsilon}_t,\ \pmb{\xi}_t)$ returned by the controller, the first corresponds to the intermediate user-level output. Before conveying this to the user, the system is allowed one last peak at the memory. This is necessitated by the fact that the read head contents at the final timestep of the computation cannot be used in $\mathcal{N}$, as this would introduce circular dependencies in the architecture's computational graph. The memory conditioning process is therefore done outside the controller, as captured by a simple trainable linear map \begin{equation}
 \notag
@@ -137,7 +137,7 @@ Out of the vectors $(\pmb{\upsilon}_t,\ \pmb{\xi}_t)$ returned by the controller
 \end{equation}
 The result of the operation is the current instance of the user-level output stream, $\pmb{y}_t$, which represents what the DNC is yielding back to the world while computing. 
 
-The second controller output, $\pmb{\xi}_t$, corresponds to the \textbf{interface vector}, which defines the controller's interaction with the memory. The interface vector can be subvidided into multiple smaller components, each one of which is responsible for a specific subtask related to memory adressing. Different activation functions are applied to these components, so as to enforce their distributions to fall within their task-specific domain. Post activation application, we have the following vectors and scalars:
+The second controller output, $\pmb{\xi}_t$, corresponds to the \textit{interface vector}, which defines the controller's interaction with the memory. The interface vector can be subvidided into multiple smaller components, each one of which is responsible for a specific subtask related to memory adressing. Different activation functions are applied to these components, so as to enforce their distributions to fall within their task-specific domain. Post activation application, we have the following vectors and scalars:
 
 \vspace{10pt}
 \hspace{-40pt}
@@ -165,9 +165,9 @@ The second controller output, $\pmb{\xi}_t$, corresponds to the \textbf{interfac
 The remainder of this section is dedicated to examining the role of each of these components.
 
 \paragraph{Content-based Addressing} 
-DNCs perform content-based addressing via \textbf{autoassociative memory}. Autoassociative memory is a strong mechanism of content-lookup, that allows a system to navigate rich data structures and selectively retrieve relevant memory objects when only shown parts thereof. The implementation involves a \textit{matching function} $\mathcal{D}: \mathbb{R}^W \times \mathbb{R}^W \to \mathbb{R}$, which is applied on a read/write key $\pmb{k}$, as given by the controller, and the contents of a memory address, $\pmb{M}[i,:]$, and returns a scalar indicating how similar these two are. Any metric of distance may be used as $\mathcal{D}$, but the most obvious choice is cosine similarity:
+DNCs perform content-based addressing via \textit{autoassociative memory}. Autoassociative memory is a strong mechanism of content-lookup, that allows a system to navigate rich data structures and selectively retrieve relevant memory objects when only shown parts thereof. The implementation involves a \textit{matching function} $\mathcal{D}: \mathbb{R}^W \times \mathbb{R}^W \to \mathbb{R}$, which is applied on a read/write key $\pmb{k}$, as given by the controller, and the contents of a memory address, $\pmb{M}[i,:]$, and returns a scalar indicating how similar these two are. Any metric of distance may be used as $\mathcal{D}$, but the most obvious choice is cosine similarity:
  \[
- \tag{Cosine Similarity}
+ \tag{Cosine Similarity} \label{eqn:Cosine}
 \mathcal{D}(\pmb{x}, \pmb{y}) = cos(\pmb{x},\pmb{y}) = \frac{\pmb{x} \cdot \pmb{y}}{||\pmb{x}|| \cdot ||\pmb{y}||}
 \]
 The controller may assign varying relative importance on different keys; this is accomplished by exponentially scaling the matches obtained by $\mathcal{D}$, using the strength vector associated with each key. These weighted matches are finally normalized by their sum, constraining the results within $\mathcal{S}^N$. The above are captured by a \textit{weighting function} $\mathcal{C}: \mathbb{R}^{N \times W} \times \mathbb{R}^W \times \mathbb{R} \to \mathbb{R}^N$, such that:
@@ -202,7 +202,7 @@ The retention vector is a measure of how much each memory address needs to be re
 \tag{Usage-tracking Vector}
 \pmb{u}_t = \underbrace{(\pmb{u}_{t-1} + \pmb{w}_{t}^{w} - \pmb{u}_{t-1} \circ \pmb{w}_t^{w})}_{\text{ \scriptsize Previous usage OR New write}} \circ \ \pmb{\psi}_t
 \]
-Contrary to first impressions, the above equation is quite intuitive. The parenthesized term sums the previous usage tracking vector with the current write weighting minus their dot product, acting as a real-valued variation of the logical OR function. A single element of this term, $\pmb{u}_t[i]$ would denote the pre-retention usage tracking of memory address $i$; it is close to $1$ if was either already in use, or just written to. Multiplied by its corresponding element of the retention vector, it can then be (partially) deallocated.
+Contrary to first impressions, the above equation is quite intuitive. The parenthesized term sums the previous usage tracking vector with the current write weighting minus their dot product, acting as a real-valued variation of the logical OR function. A single element of this term, $\pmb{u}_t[i]$ would denote the pre-retention usage tracking of memory address $i$; it is close to $1$ if it was either already in use, or just written to. Multiplied by its corresponding element of the retention vector, it can then be (partially) deallocated.
  
 Finally, the free-list $\pmb{\phi}_t$ is defined as the sorted list of indices of the usage-tracking vector, i.e. $\pmb{\phi}_t[i]$ is the index of the i-th least used address in the memory. The \textit{allocation vector} $\pmb{a}_t$ is then  used to annotate the availability of each memory address:
 \[
@@ -230,16 +230,62 @@ Having the allocation vector, the controller can now shift its attention towards
 \tag{Temporal Update}
 \pmb{L}[i,j] = \underbrace{(1 - \pmb{w}_t^w[i] - \pmb{w}_t^w[j]) \pmb{L}_{t-1}[i,j]}_{\text{\scriptsize Part of last transition}} + \underbrace{\pmb{w}_{t-1}^w[i] \pmb{w}_{t}^w[j]}_{\text{\scriptsize New transition}}
 \]
-The above equation is also quite intuitive. The first term of the addition allows the transition value between $i$ and $j$ to propagate through time. The old transition, $\pmb{L}_{t-1}[i,j]$ is complentary to the amount of writing performed in these addresses; even if we had a transition in the past, it no longer holds if either $i$ or $j$ were just written to. On the other hand, if $i$ was written to in the previous timestep and $j$ was written to in the current timestep, then a new transition is instantiated. This is captured by the second term of the addition. 
+The above equation is also quite intuitive. The first term of the addition allows the transition value between $i$ and $j$ to propagate through time. The extend of propagation of the old transition, $\pmb{L}_{t-1}[i,j]$, is complentary to the amount of writing performed in these addresses; even if we had a transition in the past, it no longer holds if either $i$ or $j$ were just written to. On the other hand, if $i$ was written to in the previous timestep and $j$ was written to in the current timestep, then a new transition is instantiated. This is captured by the second term of the addition. 
 
-\paragraph{Mode Interpolation} The temporal transition matrix can be used as another means of attention; this time, the controller can shift its attention over the memory through time. $\pmb{L}_t \pmb{w}$ shifts the weightings $\pmb{w}$ forwards in time, whereas $\pmb{L}_t^\top \pmb{w}$ shifts them backwards. The degree to which the controller performs forward, backward, or no temporal iteration is dictated by the read modes $\pmb{\pi}_t^i$ for each read head $i$:
+\paragraph{Mode Interpolation} The temporal transition matrix can be used as one last means of attention; simply multiplying the matrix by a weighting vector allows the controller to shift its attention over the memory, now through time. $\pmb{L}_t \pmb{w}$ shifts the weightings $\pmb{w}$ forwards in time, whereas $\pmb{L}_t^\top \pmb{w}$ shifts them backwards. The degree to which the controller performs forward, backward, or no temporal iteration is dictated by the read modes $\pmb{\pi}_t^i$ emitted by the controller for each read head $i$:
 \[
 \tag{Temporal Shift}
-\pmb{w}_t^{r,i} = 
+\underbrace{\pmb{w}_t^{r,i}}_{\text{\scriptsize Updated weights}} \hspace{-10pt} = \quad
 \underbrace{\pmb{\pi}_t^i[1] \pmb{L}_t\pmb{w}_t^{r,i}}_{\text{\scriptsize Forward shift}} + 
 \underbrace{\pmb{\pi}_t^i[2] \pmb{w}_t^{r,i}}_{\text{\scriptsize No shift}} + 
 \underbrace{\pmb{\pi}_t^i[3] \pmb{L}_t^\top \pmb{w}_t^{r,i}}_{\text{\scriptsize Backward shift}}
 \]
+
+\section{End-to-End Memory Networks}
+\subsection{Description}
+An end-to-end memory network is a neural architecture that also connects a RNN with a large memory array. The external nature of this array is disanalogous to traditional architectures, such as the LSTM, where the memory is encapsulated within the neural layers. Under this perspective, it can be seen as true long-term memory. The memory can be read from (potentially multiple times) during computation, using a straightforward attentional layer; the architecture therefore benefits from context-sensitive addressing capabilities. The overall model is simple, yet efficient, and includes no discontinuities in its operations, thus being trainable with gradient-based methods.
+
+\subsection{Architecture}
+\paragraph{Overview}
+An end-to-end memory network receives two inputs; a sequence of vectors $\{\pmb{x}_1,\dots,\pmb{x}_N\}$ and a query $\pmb{q}$. Both $\pmb{x}_i$ and $\pmb{q}$ are defined as symbols originating from a vocabulary $\mathcal{V}$. The network processes these inputs to return an answer $\pmb{a}$. This output is produced by first constructing continuous representations for both the input sequence and the query, and then iterating over these representations in many \textit{hops}, i.e. computational steps. The authors treat two different cases of this process; the first and simplest one employing a single layer, and the second, more general one, employing multiple layers. As this approach is favorable for understanding the architecture, we are also going to follow along the same route, modulo a few minor alterations and clarifications.
+
+\paragraph{Single-Layer Case} First, note that a symbol $x$ from a strictly total-ordered vocabulary $\mathcal{V}$ can be represented as a vector $\pmb{x} \in \mathbb{R}^{V}$, where $V = ||\mathcal{V}||$ the size of the vocabulary. This is often referred to as \textit{one-hot encoding}. Given a character $x$ that coincides with the i-th element of $\mathcal{V}$, one-hot encoding is achieved by mapping $x$ to a vector $\pmb{x}$ whose elements are all $0$, except the $i$-th element which is $1$. This is the assumed form of input representation for the sequence $\{\pmb{x}_i\}$ and the query $\pmb{q}$. 
+
+The above are transformed into two new, continuous spaces of dimensionality $d$; from each input $\pmb{x}_i$ we get a memory object $\pmb{m}_i$, whereas the query $\pmb{q}$ becomes an internal representation $\pmb{u}$. The transformations may be the result of any trainable operation, with the easiest choice being two \textit{embedding matrices} $\pmb{A}, \pmb{B} \in \mathbb{R}^{d\times V}$, such that:
+\begin{align}
+\pmb{m}_i &= \pmb{A}\pmb{x}_i \tag{Memory Transformation} \\
+\pmb{u} &= \pmb{B}\pmb{q} \tag{Query Transformation}
+\end{align}
+
+As soon as we obtain the above, the matching vector $\pmb{p}$ between the query transformation and each memory object can be computed by passing the product of the two, $\pmb{u}^\top \pmb{m}_i$, through a Softmax activation:
+\[
+\tag{Memory Matching}
+\pmb{p}_i = Softmax(\pmb{u}^\top \cdot \pmb{m}_i) = \frac{e^{\pmb{u}^\top\pmb{m}_i}}{\sum_j{e^{\pmb{u}^\top\pmb{m}_j}}}
+\]
+The inner product can be seen as a measure of similarity (reminiscent of \ref{eqn:Cosine}, minus the normalization), and the softmax activation is used to constrain $\pmb{p}$ within $\mathcal{S}^N$. 
+
+A third transformation, via a third embedding matrix $\pmb{C} \in \mathbb{R}^{d\times V}$, is used to map inputs $\{\pmb{x}_i\}$ to their output representations $\{\pmb{c}_i\}$, from which the memory response can be derived as their match-weighted sum:
+\begin{align}
+\tag{Output Transformation}
+\pmb{c}_i &= \pmb{C}\pmb{x}_i\\
+\tag{Memory Response}
+\pmb{o} &= \sum\limits_i{\pmb{p}_i\pmb{c}_i}
+\end{align}
+
+The ingenuity of this last equation is perhaps masked by its simplicity. It essentially accounts for a form of soft attention; the query dictates which parts of the output representation to focus on, depending on how it matched with the input representation. In other words, even though we always get the same output representation sequence $\{\pmb{c}_i\}$ from an input sequence $\{\pmb{x}_i\}$, the query $\pmb{q}$ plays an important role on how the network utilizes it.
+
+Finally, the memory response is combined with the query representation through some binary operation (e.g. concatenation, element-wise addition or multiplication, etc.) and is passed through one last layer responsible for the final prediction. In the original paper, which assumes a classification setting, the authors propose a Softmax-activated linear map over the addition of the query and the response:
+\[
+\tag{Final Prediction}
+\hat{\pmb{a}} = Softmax(\pmb{W} (\pmb{o}+\pmb{u}))
+\]
+
+Of course, this may be altered according to the requirements and restrictions imposed by the particular experimental environment. 
+
+\paragraph{Multi-Layer Case}
+
+
+\section{Comparison}
 
 \section{Conclusion}
 
