@@ -12,6 +12,7 @@
 \definecolor{linkcolour}{rgb}{0,0.2,0.6}
 \hypersetup{colorlinks,breaklinks,urlcolor=linkcolour,linkcolor=linkcolour}
 \usepackage{subcaption}
+\usetikzlibrary{calc, trees, fit, positioning}
 
 \begin{document}
 \author{Konstantinos Kogkalidis [6230067]}
@@ -20,37 +21,40 @@
 \maketitle
 
 \section{Introduction}
-In the last decade, neural networks have considerably revolutionized computation and artificial intelligence. Neural networks have been setting new benchmarks in tasks from a broad range of fields, including computer vision, natural language processing and pattern recognition; many of these tasks previously unsolved, and some of these benchmarks surpassing human-level performance. Until recently, this astounding potential has for the most part been limited to tasks involving sensory processing and representation learning. Memory-centric tasks, i.e. tasks requiring data storage and retrieval, have however proven difficult for neural networks to model. This paper serves as a literature review of two recent approaches towards bypassing this limitation, namely Differentiable Neural Computers (DNCs) and End-to-End Memory Networks. The rest of this section will briefly introduce some important background concepts, before the models' details are examined in sections 2 and 3, respectively. Section 4 provides a short discussion and a comparative analysis on the two approaches, and section 5 presents some concluding remarks.
+In the last decade, neural networks have considerably revolutionized computation and artificial intelligence. Neural networks have been setting new benchmarks in tasks from a broad range of fields, including computer vision, natural language processing and pattern recognition; many of these tasks previously unsolved, and some of these benchmarks surpassing human-level performance. Until recently, this astounding potential has for the most part been limited to tasks involving sensory processing and representation learning. Memory-centric tasks, i.e. tasks requiring data storage and retrieval, have however proven difficult for neural networks to model. This paper serves as a literature review of two recent approaches towards bypassing this limitation, namely Differentiable Neural Computers\cite{Graves2016} and End-to-End Memory Networks\cite{NIPS2015_5846}. The rest of this section will briefly introduce some important background concepts, before some notation is established in Section \ref{sec:Notation}. The models' details are examined in Sections \ref{DNC} and \ref{E2E}, respectively. Section \ref{Comp} provides a short discussion and a comparative analysis on the two approaches, and Section \ref{Conc} presents some concluding remarks.
 
-A particularly interesting class of neural networks are \textit{Recurrent Neural Networks} (RNNs). Unlike fully-connected networks, which accept a fixed-size input vector and produce a fixed-size output vector over a finite number of computational steps, RNNs instead operate on sequences of vectors. This additional axis of dependencies is captured by a recurrency relation interlinking the network's hidden states through time. More concretely, the hidden representation is no longer conditioned on just the current input, but also on the immediately previous version of itself (Fig.\ref{fig:1}). This elegant addition accounts for a drastic improvement in the representational capacity of the network. Whereas a simple net acts as a trainable (but parametrically fixed) function, a RNN acts as a continuous program operating on sequences of inputs. Under this viewpoint, the RNN's hidden representation can be perceived as the program's internal variables, updating as new inputs are received and affecting the computation as it progresses.
+A particularly interesting class of neural networks are \textit{Recurrent Neural Networks} (RNNs). Unlike fully-connected networks, which accept a fixed-size input vector and produce a fixed-size output vector over a finite number of computational steps, RNNs instead operate on sequences of vectors. This additional axis of dependencies is captured by a recurrency relation interlinking the network's hidden states through time. More concretely, the hidden representation is no longer conditioned on just the current input, but also on the immediately previous version of itself (Fig.\ref{fig:1}). This elegant addition accounts for a drastic improvement in the representational capacity of the network. Whereas a simple net acts as a trainable (but parametrically fixed) function, a RNN acts as a continuous program operating on sequences of inputs, and is in fact Turing complete\cite{Siegelmann545}. Under this viewpoint, the RNN's hidden representation can be perceived as the program's internal variables, updating as new inputs are received and affecting the computation as it progresses.
 
-\begin{figure}[h!]
+\begin{figure}
 \begin{minipage}{0.5\textwidth}
 	\centering
 	\begin{tikzpicture}[scale=0.5]
+		\node (X) at (-1, -2) {$\pmb{x}$};
 		\foreach \y /\alph/\name in {
-			0/x1/$x_1$,
-		  	-1/x2/$x_2$,
-		  	-2/x3/$x_3$,
-		  	-4/xM/$x_M$
+			0/x1/{},
+		  	-1/x2/{},
+		  	-2/x3/{},
+		  	-4/xM/{}
 		 }{
-		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (0,\y) {\tiny \textcolor{black}{\name}};
+		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=4mm,fill=white] (\alph) at (0,\y) {\tiny \textcolor{black}{\name}};
 		 }
+		 \node (H) at (4, 2.5) {$\pmb{h}$};
 		 \node (x..) at (0,-3) {\tiny {\vdots}};
 		 \foreach \y /\alph/\name in {
-			1/h1/$h_1$,
-		  	0/h2/$h_2$,
-		  	-1/h3/$h_3$,
-		  	-5/hN/$h_N$
+			1.5/h1/{},
+		  	0/h2/{},
+		  	-1.5/h3/{},
+		  	-5.5/hN/{}
 		 }{
 		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (4,\y) {\tiny \textcolor{black}{\name}};
 		 }
 		 \node (h..) at (4,-3) {\tiny {\vdots}};
+		 \node (Y) at (9, -2) {$\pmb{y}$};
 		 \foreach \y /\alph/\name in {
-			0/y1/$y_1$,
-		  	-1/y2/$y_2$,
-		  	-2/y3/$y_3$,
-		  	-4/yP/$y_P$
+			0/y1/{},
+		  	-1/y2/{},
+		  	-2/y3/{},
+		  	-4/yP/{}
 		 }{
 		 	\node[circle, draw=gray!90,inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (8,\y) {\tiny \textcolor{black}{\name}};
 		 }
@@ -67,30 +71,33 @@ A particularly interesting class of neural networks are \textit{Recurrent Neural
 	\begin{minipage}{0.5\textwidth}
 	\centering
 	\begin{tikzpicture}[scale=.5]
+		\node (X) at (-1, -2) {$\pmb{x}$};
 		\foreach \y /\alph/\name in {
-			0/x1/$x_1$,
-		  	-1/x2/$x_2$,
-		  	-2/x3/$x_3$,
-		  	-4/xM/$x_M$
+			0/x1/{},
+		  	-1/x2/{},
+		  	-2/x3/{},
+		  	-4/xM/{}
 		 }{
 		% 	\node[] (\alph) at (0,\y) {\name};
 		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (0,\y) {\tiny \textcolor{black}{\name}};
 		 }
 		 \node (x..) at (0,-3) {\tiny {\vdots}};
+	  \node (H) at (4, 2.5) {$\pmb{h}$};
 		 \foreach \y /\alph/\name in {
-			1/h1/$h_1$,
-		  	0/h2/$h_2$,
-		  	-1/h3/$h_3$,
-		  	-5/hN/$h_N$
+			1.5/h1/{},
+		  	0/h2/{},
+		  	-1.5/h3/{},
+		  	-6.5/hN/{}
 		 }{
 		 	\node[circle, draw=black, inner sep=0pt,minimum size=3mm,fill=gray!20] (\alph) at (4,\y) {\tiny \textcolor{black}{\name}};
 		 }
 		 \node (h..) at (4,-3) {\tiny {\vdots}};
+		 \node (Y) at (9, -2) {$\pmb{y}$};
 		 \foreach \y /\alph/\name in {
-			0/y1/$y_1$,
-		  	-1/y2/$y_2$,
-		  	-2/y3/$y_3$,
-		  	-4/yP/$y_P$
+			0/y1/{},
+		  	-1/y2/{},
+		  	-2/y3/{},
+		  	-4/yP/{}
 		 }{
 		 	\node[circle, draw=gray!90, inner sep=0pt,minimum size=3mm,fill=white] (\alph) at (8,\y) {\tiny \textcolor{black}{\name}};
 		 }
@@ -108,19 +115,100 @@ A particularly interesting class of neural networks are \textit{Recurrent Neural
 \end{tikzpicture}
 	\subcaption{Recurrent Neural Network}
 	\end{minipage}
-	\caption[Hello world]
-	{\small \textit{Comparison between a simple neural network and a RNN. (a) The simple network applies two transformations $\pmb{x} \mapsto \pmb{h}$ and $\pmb{h} \mapsto \pmb{y}$, the composition of which can be seen as a function $\pmb{x} \mapsto \pmb{y}$. (b) The recurrent network allows through-time connections, depicted with the dotted lines, such that $\pmb{x}_t \times \pmb{h}_{t-1} \mapsto \pmb{h}_t$. The output then becomes a function of the full sequence of inputs received: $\underbrace{\pmb{x}_0 \times \pmb{x}_1 \times \dots \times \pmb{x}_t}_{\text{Sequence Length}} \mapsto \pmb{y}_t$.}\label{fig:1}}
+	\caption[]
+	{\small \textit{Comparison between a feedforward neural network and a RNN. (a) The simple network applies two transformations $\pmb{x} \mapsto \pmb{h}$ and $\pmb{h} \mapsto \pmb{y}$, the composition of which can be seen as a function $\pmb{x} \mapsto \pmb{y}$. (b) The recurrent network allows through-time connections, depicted with the dotted lines, such that $\pmb{x}_t \times \pmb{h}_{t-1} \mapsto \pmb{h}_t$. The output then becomes a function of the full sequence of inputs received: $\underbrace{\pmb{x}_0 \times \pmb{x}_1 \times \dots \times \pmb{x}_t}_{\text{Sequence Length}} \mapsto \pmb{y}_t$.}\label{fig:1}}
 \end{figure}
 
-Although RNNs have been introduced more than three decades ago, their potential was only recognized recently, as the availability of computational power surged. Their ability to model sequential patterns and their interesting properties have garnered a lot of attention, yet they still suffer from two major drawbacks. The first relates to the statefulness achieved by their intermediate representation; even though it is distributed (hence more expressive than stochastic FSAs or Markov models), the hidden vector's size is finite and fixed, therefore capable of only limited, lossy storage. The second is a more intrinsic one and is not only tied to RNNs but neural networks in general; there is no separation between memory and processing, as each neuron is simultaneously a minimal storage unit and a computational one. Although appealing from a biological perspective, this goes against the von Neumann model and our programming paradigm. 
+Although RNNs have been introduced more than three decades ago, their potential was only recognized recently, as the availability of computational power surged. Their ability to model sequential patterns and their interesting properties have garnered a lot of attention, yet they still suffer from two major drawbacks. The first relates to the statefulness achieved by their intermediate representation; even though it is distributed (hence more expressive than stochastic FSAs or Markov models)\cite[Lecture~10]{Hinton13}, the hidden vector's size is finite and fixed, therefore capable of only limited, lossy storage. The second is a more intrinsic one and is not only tied to RNNs but neural networks in general; there is no separation between memory and processing, as each neuron is simultaneously a minimal storage unit and a computational one. Although appealing from a biological perspective, this goes against the von Neumann model and the modern programming paradigm. 
 
-A series of advancements has seeked to enhance RNNs with stronger memory management. Starting with the introduction of the \textit{Long Short-Term Memory}, which permits finite storage over very long computations, research in RNNs has bloomed towards many different directions. One particularly exciting recent advancement is the so-called \textit{attentional interface}, which allows a network to selectively shift its focus on particular indices over a set of dimensions of an arbitrary tensor, thus enabling content-based adressing. The implications of this seemingly simple trick are tremendous; when employing fully differentiable attention (soft-attention), a network can learn how to pick out and combine relevant elements out of a (potentially very large) tensor, instead of lossily encoding it. This translates to arbitrary information retrieval; in other words, the same representations can now have different effects on the computation depending on the present context, similar to how a computer program would refer only to the variables dictated by its currently run instruction. Since its inception, attention has been a key-concept in many influential publication; the creative liberty it is offering, in terms of new potential operations, has also paved the way for architectures which decouple storage from computation. Such architectures, including but not limited to the two presented in this paper, utilize large external matrices and employ attention to perform read and write operations on them.
+A series of advancements has seeked to enhance RNNs with stronger memory management. Starting with the introduction of the \textit{Long Short-Term Memory}\cite{Hochreiter:1997:LSM:1246443.1246450,Gers99learningto}, which permits finite storage over very long computations, research in RNNs has bloomed towards many different directions. One particularly exciting recent advancement is the so-called \textit{attentional interface}\cite{NIPS2014_5542,Bahdanau} (Fig.\ref{fig:2}), which allows a network to selectively shift its focus on particular indices over a set of dimensions of an arbitrary tensor, thus enabling content-based adressing. The implications of this seemingly simple trick are tremendous; when employing fully differentiable attention (soft-attention), a network can learn how to pick out and combine relevant elements out of a (potentially very large) tensor, instead of lossily encoding it. This translates to arbitrary information retrieval; in other words, the same representations can now have different effects on the computation depending on the present context, similar to how a computer program would refer only to the variables dictated by its currently run instruction\cite{NIPS2014_5346}. Since its inception, attention has been a key-concept in many influential publications; the creative liberty it is offering, in terms of new potential operations, has also paved the way for architectures which decouple storage from computation. Such architectures, including but not limited to the two presented in this paper, utilize large external matrices and employ attention to perform read and write operations on them.
+
+\begin{figure}
+	\centering
+	\begin{tikzpicture}
+		[auto,
+		scale=0.65,
+		h/.style = {draw=black, rectangle, text centered, text depth=0.5em, text width = 2em, text height=1em,  align=center},
+		c/.style = {draw=black, circle, minimum size=1mm, inner sep=0pt},
+		c2/.style = {draw=black, circle, minimum size=2mm, inner sep=0pt}]
+		
+		
+		\node (alpha) at (-2, 5.5) {$a$};
+		\foreach \y/\alph in {
+			4/Nx1,
+			3.25/Nx2,
+			2.5/Nx3}{
+			\node[c2] (\alph) at (-3,\y) {};
+		}
+		\foreach \y/\alph in {
+			4.75/Nh1,
+			4/Nh2,
+			3.25/Nh3,
+			2.5/Nh4,
+			1.75/Nh5}{
+			\node[c2] (\alph) at (-2,\y) {};
+		}
+		\foreach \y/\alph in {
+			4/Ny1,
+			3.25/Ny2,
+			2.5/Ny3}{
+			\node[c2] (\alph) at (-1,\y) {};
+		}		
+			
+		\foreach \source in {Nx1, Nx2, Nx3}{
+		\foreach \target in {Nh1, Nh2, Nh3, Nh4, Nh5}{
+			\draw (\source) edge (\target);}}
+		\foreach \source in {Nh1, Nh2, Nh3, Nh4, Nh5}{
+		\foreach \target in {Ny1, Ny2, Ny3}{
+			\draw (\source) edge (\target);}}	
+		
+		
+		\node (h..) at (5.25,0) {$\dots$};
+		\foreach \x/\alph/\name in {
+			0/h1/$\pmb{h}_1$,
+			2.5/h2/$\pmb{h}_2$,
+			8/hT/$\pmb{h}_T$
+		}{
+			\node[h] (\alph) at (\x,0) {\name};
+		}
+		\node[h] (c) at (4,5) {$\pmb{c}$};		
+		
+		\node[c] (+) at (4, 3) {$+$};
+		
+		\node[c] (x1) at (1.65,1.5) {\small $\times$};
+		\node[c] (x2) at (3.05,1.5) {\small $\times$};
+		\node[c] (xT) at (6.35,1.5) {\small $\times$};
+
+		\draw (0,-1.5) edge[dashed] (h1);	
+		\draw (2.5,-1.5) edge[dashed] (h2);	
+		\draw (8,-1.5) edge[dashed] (hT);	
+		\draw (h1.north) edge (x1);
+		\draw (x1) edge (+);
+		\draw (h2.north) edge (x2);
+		\draw (x2) edge (+);
+		\draw (hT.north) edge (xT);
+		\draw (xT) edge (+);
+		\draw (+) edge[->] (c);
+		
+		\draw (-4,4) edge[dashed] (Nx1);
+		\draw (-4,3.25) edge[dashed] (Nx2);
+		\draw (-4,2.5) edge[dashed] (Nx3);
+		
+		\draw (Ny1)  [dashed] .. controls +(0.8,0.8) and +(-0.8,0.8) ..  (x1);
+		\draw (Ny2)  [dashed] .. controls +(3,3) and +(-0.6,0.6) ..  (x2);
+		\draw (Ny3)  [dashed] .. controls +(2,-3) and +(0.6,0.4) ..  (xT.west);
+	\end{tikzpicture}
+	\caption[]
+	{\small \textit{}\label{fig:2} General case of an attentional layer. Given some sequence $[\pmb{h}_1,\dots,\pmb{h}_T]$ (e.g. the hidden output of an RNN), we may use an neural function $a$ to obtain a weighting vector $\pmb{a} \in \mathbb{R}^{T}$. Multiplying each sequence element by its corresponding weight and summing up the results, we end up with a context vector $\pmb{c}$. Note that when $a$ accepts an external vector (or vector sequence) as its argument, the result is a context-dynamic selection of the $[\pmb{h}_1,\dots]$ sequence.}
+\end{figure}
 
 \section{Notation and Preliminaries}
+\label{sec:Notation}
 Given the technical nature of the works presented, it is important to establish a notational common ground. The $(N-1)$-simplex, i.e. the set of all variations of $N$ non-negative scalars that sum up to 1, will be indicated by $\mathcal{S}^N$. A vector will be denoted by a boldface lower letter, e.g. $\pmb{v}$, whereas a matrix will be indicated by a boldface capital letter, e.g. $\pmb M$. Vector concatenation, i.e. merging together N vectors in the order they are given to a create a new, long vector is denoted by a bracketing of vectors separated by the semicolon, e.g. $[\pmb{x}; \pmb{y}; \pmb{z}]$ reads as the concatenation of $\pmb x$, $\pmb y$ and $\pmb z$. When using the comma rather than the semicolon, the notation instead presents a sequence of vectors, e.g. $[\pmb a _1, \dots ,\pmb a _N]$ denotes a sequence of vectors $\pmb a _1$ to $\pmb a _N$. A subscript on a vector or matrix is used to index a single temporal instance from a sequence of such vectors or matrices, e.g. $\pmb{a}_i$ refers to the instance at timestep $i$ of the time-varying vector sequence $[\pmb a _1 , \dots ]$. It should not be confused with intra-vector or matrix indexing, i.e. singling out particular elements out of a vector or matrix, which is denoted by $\pmb a [i]$ and reads as the i-th element of a vector $\pmb a$. Finally, a reminder that a matrix $\pmb M \in \mathbb{R}^{K\times L}$ can be seen as a linear map $M: \mathbb{R}^L \to \mathbb{R}^K$; linear application of $\pmb v \in \mathbb{R}^V $ on $\pmb M \in \mathbb{R}^{M \times V}$ (or matrix-vector multiplication) is thus simply denoted $\pmb {Mv}$.
 
 
 \section{Differentiable Neural Computers}
+\label{DNC}
 \subsection{Description}
 Inspired by the von Neumann architecture, DNCs model computation as the interfacing between two units; a RNN controller and an external memory matrix, functioning analogously to the CPU and the RAM, respectively. The memory matrix can be adressed using soft attention mechanisms, allowing selective reading and writing. As both the controller and the interfacing are differentiable, the full architecture is end-to-end differentiable, essentially allowing it to be trained purely with data and minimal human supervision. As the system is already equiped with the necessary tools to simulate traditional computation, i.e. adressing mechanisms, information storage and retrieval, logical flows and arithmetic processing, a DNC in training is learning the instructions of a program rather than the parameters of a function, and a trained DNC should be able to mimic the behavior of a traditionally hand-written program.
 
@@ -165,7 +253,7 @@ The second controller output, $\pmb{\xi}_t$, corresponds to the \textit{interfac
 The remainder of this section is dedicated to examining the role of each of these components.
 
 \paragraph{Content-based Addressing} 
-DNCs perform content-based addressing via \textit{autoassociative memory}. Autoassociative memory is a strong mechanism of content-lookup, that allows a system to navigate rich data structures and selectively retrieve relevant memory objects when only shown parts thereof. The implementation involves a \textit{matching function} $\mathcal{D}: \mathbb{R}^W \times \mathbb{R}^W \to \mathbb{R}$, which is applied on a read/write key $\pmb{k}$, as given by the controller, and the contents of a memory address, $\pmb{M}[i,:]$, and returns a scalar indicating how similar these two are. Any metric of distance may be used as $\mathcal{D}$, but the most obvious choice is cosine similarity:
+DNCs perform content-based addressing via \textit{autoassociative memory}\cite[Chapter~12]{rojas}. Autoassociative memory is a strong mechanism of content-lookup, that allows a system to navigate rich data structures and selectively retrieve relevant memory objects when only shown parts thereof. The implementation involves a \textit{matching function} $\mathcal{D}: \mathbb{R}^W \times \mathbb{R}^W \to \mathbb{R}$, which is applied on a read/write key $\pmb{k}$, as given by the controller, and the contents of a memory address, $\pmb{M}[i,:]$, and returns a scalar indicating how similar these two are. Any metric of distance may be used as $\mathcal{D}$, but the most obvious choice is cosine similarity:
  \[
  \tag{Cosine Similarity} \label{eqn:Cosine}
 \mathcal{D}(\pmb{x}, \pmb{y}) = cos(\pmb{x},\pmb{y}) = \frac{\pmb{x} \cdot \pmb{y}}{||\pmb{x}|| \cdot ||\pmb{y}||}
@@ -197,7 +285,7 @@ Writing to the memory is also dictated by a similar operation, which must now be
 \pmb{\psi}_t = \prod\limits_{i=1}^{R}{(\pmb{1}-f_t^i \pmb{w}_t^{r,i})}
 \]
 
-The retention vector is a measure of how much each memory address needs to be retained. Its functional complement, the \textit{usage-tracking vector} $\pmb{u}_t$, annotates each memory address with a scalar, responsible for signaling how strongly it is being used. It is recursively defined as follows:
+The retention vector is a measure of how much each memory address needs to be retained. Its functional complement, the \textit{usage-tracking vector} $\pmb{u}_t$, annotates each memory address with a scalar, responsible for signaling how strongly it is being used. It is recurrently defined as follows:
 \[
 \tag{Usage-tracking Vector}
 \pmb{u}_t = \underbrace{(\pmb{u}_{t-1} + \pmb{w}_{t}^{w} - \pmb{u}_{t-1} \circ \pmb{w}_t^{w})}_{\text{ \scriptsize Previous usage OR New write}} \circ \ \pmb{\psi}_t
@@ -242,14 +330,15 @@ The above equation is also quite intuitive. The first term of the addition allow
 \]
 
 \section{End-to-End Memory Networks}
+\label{E2E}
 \subsection{Description}
-An end-to-end memory network is a neural architecture that also connects a RNN with a large memory array. The external nature of this array is disanalogous to traditional architectures, such as the LSTM, where the memory is encapsulated within the neural layers. Under this perspective, it can be seen as true long-term memory. The memory can be read from (potentially multiple times) during computation, using a straightforward attentional layer; the architecture therefore benefits from context-sensitive addressing capabilities. The overall model is simple, yet efficient, and includes no discontinuities in its operations, thus being trainable with gradient-based methods.
+An end-to-end memory network is a neural architecture that also connects a RNN with a large memory array. The external nature of this array is disanalogous to traditional architectures, such as the LSTM, where the memory is encapsulated within the neural layers. Considering this difference, it can be perceived as true long-term memory. The memory can be read from (potentially multiple times) during computation, using a straightforward attentional layer; the architecture therefore benefits from context-sensitive addressing capabilities. The overall model is simple, yet efficient, and includes no discontinuities in its operations, thus being trainable with gradient-based methods.
 
 \subsection{Architecture}
 \paragraph{Overview}
 An end-to-end memory network receives two inputs; a sequence of vectors $\{\pmb{x}_1,\dots,\pmb{x}_N\}$ and a query $\pmb{q}$. Both $\pmb{x}_i$ and $\pmb{q}$ are defined as symbols originating from a vocabulary $\mathcal{V}$. The network processes these inputs to return an answer $\pmb{a}$. This output is produced by first constructing continuous representations for both the input sequence and the query, and then iterating over these representations in many \textit{hops}, i.e. computational steps. The authors treat two different cases of this process; the first and simplest one employing a single layer, and the second, more general one, employing multiple layers. As this approach is favorable for understanding the architecture, we are also going to follow along the same route, modulo a few minor alterations and clarifications.
 
-\paragraph{Single-Layer Case} First, note that a symbol $x$ from a strictly total-ordered vocabulary $\mathcal{V}$ can be represented as a vector $\pmb{x} \in \mathbb{R}^{V}$, where $V = ||\mathcal{V}||$ the size of the vocabulary. This is often referred to as \textit{one-hot encoding}. Given a character $x$ that coincides with the i-th element of $\mathcal{V}$, one-hot encoding is achieved by mapping $x$ to a vector $\pmb{x}$ whose elements are all $0$, except the $i$-th element which is $1$. This is the assumed form of input representation for the sequence $\{\pmb{x}_i\}$ and the query $\pmb{q}$. 
+\paragraph{Single-Layer Case} First, note that a symbol $x$ from a strictly total-ordered vocabulary $\mathcal{V}$ can be uniquely represented as a vector $\pmb{x} \in \mathbb{R}^{V}$, where $V = ||\mathcal{V}||$ the size of the vocabulary. This is often referred to as \textit{one-hot encoding}. Given a character $x$ that coincides with the i-th element of $\mathcal{V}$, one-hot encoding is achieved by mapping $x$ to a vector $\pmb{x}$ whose elements are all $0$, except the $i$-th element which is $1$. This is the assumed form of input representation for the sequence $\{\pmb{x}_i\}$ and the query $\pmb{q}$. 
 
 The above are transformed into two new, continuous spaces of dimensionality $d$; from each input $\pmb{x}_i$ we get a memory object $\pmb{m}_i$, whereas the query $\pmb{q}$ becomes an internal representation $\pmb{u}$. The transformations may be the result of any trainable operation, with the easiest choice being two \textit{embedding matrices} $\pmb{A}, \pmb{B} \in \mathbb{R}^{d\times V}$, such that:
 \begin{align}
@@ -272,7 +361,7 @@ A third transformation, via a third embedding matrix $\pmb{C} \in \mathbb{R}^{d\
 \pmb{o} &= \sum\limits_i{\pmb{p}_i\pmb{c}_i}
 \end{align}
 
-The ingenuity of this last equation is perhaps masked by its simplicity. It essentially accounts for a form of soft attention; the query dictates which parts of the output representation to focus on, depending on how it matched with the input representation. In other words, even though we always get the same output representation sequence $\{\pmb{c}_i\}$ from an input sequence $\{\pmb{x}_i\}$, the query $\pmb{q}$ plays an important role on how the network utilizes it.
+The ingenuity of this last equation is perhaps masked by its simplicity. It essentially accounts for a form of soft attention; the query dictates which parts of the output representation to focus on, depending on how it matched with the input representation. In other words, even though we always get the same output representation sequence $\{\pmb{c}_i\}$ from some input sequence $\{\pmb{x}_i\}$, the query $\pmb{q}$ plays an important role on how the network utilizes it.
 
 Finally, the memory response is combined with the query representation through some binary operation (e.g. concatenation, element-wise addition or multiplication, etc.) and is passed through one last layer responsible for the final prediction. In the original paper, which assumes a classification setting, the authors propose a Softmax-activated linear map over the addition of the query and the response:
 \[
@@ -283,10 +372,47 @@ Finally, the memory response is combined with the query representation through s
 Of course, this may be altered according to the requirements and restrictions imposed by the particular experimental environment. 
 
 \paragraph{Multi-Layer Case}
+In the more general case, the network may consist of multiple stacked layers; the presence of $K$ memory layers would then translate to $K$ hops. The authors propose a few different variations of connections between the different layers, which are summarized below. 
+
+The first layer would operate as described in the previous paragraph. For each layer after the first, its input is defined as a linear combination of the previous layer's query and output transformations, i.e.
+\[
+\tag{Next Query Transformation}
+\pmb{u}^{k+1} = \pmb{H}\pmb{u}^{k} + \pmb{o}^k 
+\]
+where $\pmb{H}$ may either be a trainable weight matrix (the same for all inter-layer links) or the identity matrix (in which case the query transformation is just added as is).
+
+Each layer applies the memory and output transformations on $pmb{x}$ with each own embedding matrices $A^k, C^k$. The authors, however, explore a few options of weight-sharing in order to reduce the parameter space. One such option is to follow the RNN paradigm, letting all matrices with the same functionality be the same:
+\[
+\tag{RNN-Tying}
+\forall \ (i,j): \pmb{A}^i = \pmb{A}^j, \pmb{C}^i = \pmb{C}^j
+\]
+This option is of particular interest, as then the network equations would be directly equivalent to those of RNNs, with one subtle but important difference. The intermediate representation $\pmb{p}$, which can be compared with the internal network recurrency, is not a static sample of the memory but rather a softly attended variant, which results in more expressive conditioning of the output on the memory. 
+
+The other alternative proposed would be to tie these matrices in a way such that the memory representation of a layer is matched with the output representation of the previous one, in what the authors call adjacency tying. This can be achieved simply by letting:
+\[
+\tag{Adjacency Tying}
+\pmb{A}^{k+1} = \pmb{C}^k
+\]
+What this accomplishes is constructing output representations that are continuous and comparable to the input representations of the immediately next layer, facilitating easier training.
+
+\section{Discussion}
+\label{Comp}
+The previous sections have presented a summary of the design and functionality of two modern approaches towards enhancing recurrent networks with memory. This Section will be devoted to some commentary on what the implications of these networks are, how they compare to one another and what their relevance is to computation as a whole.
+
+\subsection{Comparisons}
+Whereas both models are improvements over traditional recurrent networks, they approach the problem from two entirely different angles. 
+
+Differentiable Neural Computers present a concrete, well-thought architecture that can simulate traditional computation via purely differentiable operations. This is one of the very first instantations of a model that falls within the domain of \textit{Probabilistic Programming}\cite{Meijer}, an emerging programming paradigm that proposes treating computer programs as stochastic distributions. Examined end-to-end, Differentiable Neural Computers propose a system capable of learning task-specific memory management and computation. Its practical use cases may be limited, for the time being, but the contribution it makes as a whole is clear and rather groundbreaker; that of a single, unified machinery capable of learning programs with vastly different functionalities and input/output data structures. It is a huge leap towards automated program synthesis and recognition. At the same time, the authors pose strong arguments for their design decisions and draw parallels between biological intelligence and their system. 
+
+Differentiable Neural Computers are the direct successor to Neural Turing Machines\cite{DBLP:journals/corr/GravesWD14}, a related architecture that has the same operative goals but slightly limited functions. More specifically, Neural Turing Machines lack the ability to perform temporal linking and dynamic memory allocation, both of which the Differential Neural Computers excel at. This in turn disabled them from performing iterative memory retrieval of sequences stored in remote blocks, and hindered their computational capacities at situations when reiterating through a previously used memory matrix. 
 
 
-\section{Comparison}
+
 
 \section{Conclusion}
+\label{Conc}
+
+\bibliographystyle{ieeetr}
+\bibliography{sources}
 
 \end{document}
