@@ -175,13 +175,13 @@ A series of advancements has seeked to enhance RNNs with stronger memory managem
 		
 		\node[c] (+) at (4, 3) {$+$};
 		
-		\node[c] (x1) at (1.65,1.5) {\small $\times$};
+		\node[c] (x1) at (1.5,1.5) {\small $\times$};
 		\node[c] (x2) at (3.05,1.5) {\small $\times$};
 		\node[c] (xT) at (6.35,1.5) {\small $\times$};
 
-		\draw (0,-1.5) edge[dashed] (h1);	
-		\draw (2.5,-1.5) edge[dashed] (h2);	
-		\draw (8,-1.5) edge[dashed] (hT);	
+		\draw (0,-1.5) edge[dotted] (h1);	
+		\draw (2.5,-1.5) edge[dotted] (h2);	
+		\draw (8,-1.5) edge[dotted] (hT);	
 		\draw (h1.north) edge (x1);
 		\draw (x1) edge (+);
 		\draw (h2.north) edge (x2);
@@ -190,16 +190,16 @@ A series of advancements has seeked to enhance RNNs with stronger memory managem
 		\draw (xT) edge (+);
 		\draw (+) edge[->] (c);
 		
-		\draw (-4,4) edge[dashed] (Nx1);
-		\draw (-4,3.25) edge[dashed] (Nx2);
-		\draw (-4,2.5) edge[dashed] (Nx3);
+		\draw (-4,4) edge[dotted] (Nx1);
+		\draw (-4,3.25) edge[dotted] (Nx2);
+		\draw (-4,2.5) edge[dotted] (Nx3);
 		
 		\draw (Ny1)  [dashed] .. controls +(0.8,0.8) and +(-0.8,0.8) ..  (x1);
 		\draw (Ny2)  [dashed] .. controls +(3,3) and +(-0.6,0.6) ..  (x2);
 		\draw (Ny3)  [dashed] .. controls +(2,-3) and +(0.6,0.4) ..  (xT.west);
 	\end{tikzpicture}
 	\caption[]
-	{\small \textit{}\label{fig:2} General case of an attentional layer. Given some sequence $[\pmb{h}_1,\dots,\pmb{h}_T]$ (e.g. the hidden output of an RNN), we may use an neural function $a$ to obtain a weighting vector $\pmb{a} \in \mathbb{R}^{T}$. Multiplying each sequence element by its corresponding weight and summing up the results, we end up with a context vector $\pmb{c}$. Note that when $a$ accepts an external vector (or vector sequence) as its argument, the result is a context-dynamic selection of the $[\pmb{h}_1,\dots]$ sequence.}
+	{\small \textit{}\label{fig:2} General case of an attentional layer. Given some sequence $[\pmb{h}_1,\dots,\pmb{h}_T]$ (e.g. a full sequence of RNN hidden states), we may use an neural function $a$ to obtain a weighting vector $\pmb{a} \in \mathbb{R}^{T}$. Multiplying each sequence element by its corresponding weight and summing up the results, we end up with a context vector $\pmb{c}$. Note that when $a$ accepts an external vector (or vector sequence) as its argument, the result is a context-dynamic selection and linear combination of (parts of) the $[\pmb{h}_1,\dots]$ sequence.}
 \end{figure}
 
 \section{Notation and Preliminaries}
@@ -215,6 +215,41 @@ Inspired by the von Neumann architecture, DNCs model computation as the interfac
 \subsection{Architecture}
 \paragraph{Overview} 
 A differentiable neural computer consists of two main components; a recurrent neural network, called the \textbf{controller network}, and an external \textbf{memory matrix} $M \in \mathbb{R}^{N\times W}$. The matrix contains $N$ memory adresses, each of size $W$, which can be read by the controller through $R$ \textit{read heads}, or written to by one \textit{write head}. At timestep t, the system as a whole receives input in the form of a vector, $\pmb{x}_t \in \mathbb{R}^X$, and produces output in the form of a vector, $\pmb{y}_t \in \mathbb{R}^Y$. The input may be samples from any dataset environment, e.g. some encoding of sensory signals. The output can either represent an approximation for a target vector $\pmb{z}_t \in \mathbb{R}^Y$ (in the supervised learning setting) or encode some action (in the reinforcement learning setting).
+
+\begin{figure}
+	\centering
+	\begin{tikzpicture}
+		[auto,
+		scale=0.55,
+		h/.style = {draw=black, rectangle, text centered, text depth=0.5em, text width = 6em, text height=1em,  align=center},
+		c/.style = {draw=black, circle, minimum size=1mm, inner sep=0pt},
+		c2/.style = {draw=black, circle, minimum size=2mm, inner sep=0pt}]
+		
+		\node[h, text width=18em] (memory) at (3,0) {Memory};		
+		\foreach \x/\alph/\name in {
+			0/read/{Read Heads},
+			6/write/{Write Head}}
+		{
+			\node[h] (\alph) at (\x, 2.5) {\name};
+		}
+		\node[h] (controller) at (3,5) {Controller};\
+		\node (input) at (0,7.5) {Input};
+		\node (output) at (6,7.5) {Output};
+		
+		\draw (-0.3,0.7) edge[->] (-0.3,1.8);
+		\draw (0.3,0.7) edge[<-] (0.3,1.8);
+		\draw (6,0.7) edge[<-] (6,1.8);
+		\draw (-0.3,3.2) edge[->] (2, 4.3);
+		\draw (0.3,3.2) edge[<-] (2.6, 4.3);
+		\draw (6,3.2) edge[<-] (3.6, 4.3);
+		
+		\draw (input) edge[->] (controller);
+		\draw (controller) edge[->] (output);
+		
+	\end{tikzpicture}
+	\caption[]
+	{\small \textit{}\label{fig:3} High-level view of the DNC. The controller receives continuous input from some external source, which is processed and translated to memory reading/writing and computation instructions. During its operation, the DNC yields a continuous output stream back to the world.}
+\end{figure}
 \paragraph{Controller}
 The aforementioned input is passed to the controller network, alongside the contents of each of the read heads as drawn from the memory at the previous time instance: $\pmb{r}_{t-1}^{i},\ i \in 1, \dots ,R$. The concatenation of the above yields a vector $\pmb{\chi}_t \in \mathbb{R}^{X + RW}: \pmb{\chi}_t = [\pmb{x}_t; \pmb{r}_{t-1}^1; \dots \pmb{r}_{t-1}^R ] $. A full sequence of such inputs, $[\pmb{\chi}_1,\dots ,\pmb{\chi}_T]$ is passed through a set of dynamic state equations $\mathcal{N}$, as implemented by the controller, that yield back two intermediate outputs, $\pmb{\upsilon }_T$ and $\pmb{\xi}_T$, such that $\mathcal{N}([\pmb{\chi}_1,\dots,\pmb{\chi}_T]) = (\pmb{\upsilon}_T,\ \pmb{\xi}_T)$. The exact implementation of $\mathcal{N}$ is not essential to the architecture as a whole; $\mathcal{N}$ may be any neural network. Deep long short-term memory networks are the state of the art in sequential modeling, and therefore make for a reasonable choice, since the controller needs to be expressive enough to handle potentially complex data streams.
 
@@ -376,7 +411,7 @@ In the more general case, the network may consist of multiple stacked layers; th
 
 The first layer would operate as described in the previous paragraph. For each layer after the first, its input is defined as a linear combination of the previous layer's query and output transformations, i.e.
 \[
-\tag{Next Query Transformation}
+\tag{Next Query}
 \pmb{u}^{k+1} = \pmb{H}\pmb{u}^{k} + \pmb{o}^k 
 \]
 where $\pmb{H}$ may either be a trainable weight matrix (the same for all inter-layer links) or the identity matrix (in which case the query transformation is just added as is).
@@ -397,20 +432,27 @@ What this accomplishes is constructing output representations that are continuou
 
 \section{Discussion}
 \label{Comp}
-The previous sections have presented a summary of the design and functionality of two modern approaches towards enhancing recurrent networks with memory. This Section will be devoted to some commentary on what the implications of these networks are, how they compare to one another and what their relevance is to computation as a whole.
+The previous sections have presented a summary of the design and functionality of two modern approaches towards enhancing recurrent networks with memory. This section will be devoted to some commentary on what the implications of these networks are, how they compare to one another and what their relevance is to computation as a whole.
 
 \subsection{Comparisons}
 Whereas both models are improvements over traditional recurrent networks, they approach the problem from two entirely different angles. 
 
-Differentiable Neural Computers present a concrete, well-thought architecture that can simulate traditional computation via purely differentiable operations. This is one of the very first instantations of a model that falls within the domain of \textit{Probabilistic Programming}\cite{Meijer}, an emerging programming paradigm that proposes treating computer programs as stochastic distributions. Examined end-to-end, Differentiable Neural Computers propose a system capable of learning task-specific memory management and computation. Its practical use cases may be limited, for the time being, but the contribution it makes as a whole is clear and rather groundbreaker; that of a single, unified machinery capable of learning programs with vastly different functionalities and input/output data structures. It is a huge leap towards automated program synthesis and recognition. At the same time, the authors pose strong arguments for their design decisions and draw parallels between biological intelligence and their system. 
+Differentiable Neural Computers present a concrete, well-thought architecture that can simulate traditional computation via purely differentiable operations. This is one of the very first instantations of a model that falls within the domain of \textit{Probabilistic Programming}\cite{Meijer}, an emerging programming paradigm that proposes treating computer programs as stochastic distributions. Examined end-to-end, Differentiable Neural Computers propose a system capable of learning task-specific memory management and computation. Its practical use cases may be limited for the time being, but the contribution it makes as a whole is clear and rather groundbreaking; that of a single, unified machinery capable of learning programs with vastly different functionalities and input/output data structures; a great leap towards automated program inference. At the same time, the authors pose strong arguments for their design decisions and draw a few interesting parallels between biological intelligence and their system. 
 
-Differentiable Neural Computers are the direct successor to Neural Turing Machines\cite{DBLP:journals/corr/GravesWD14}, a related architecture that has the same operative goals but slightly limited functions. More specifically, Neural Turing Machines lack the ability to perform temporal linking and dynamic memory allocation, both of which the Differential Neural Computers excel at. This in turn disabled them from performing iterative memory retrieval of sequences stored in remote blocks, and hindered their computational capacities at situations when reiterating through a previously used memory matrix. 
+Differentiable Neural Computers are the direct successor to Neural Turing Machines\cite{DBLP:journals/corr/GravesWD14}, a related architecture that has the same operative goals but slightly more limited functions. More specifically, Neural Turing Machines lack the ability to perform temporal linking and dynamic memory allocation. This limitation, in turn, disallows them from performing iterative memory retrieval of sequences stored in disparate blocks, and hinders their computational capacities when attempting to reiterate through a previously used memory matrix. Differentiable Neural Computers take specific measures against these problems, as described earlier, and thus excel at both memory allocation and arbitrary sequence retrieval.
 
+End-to-End Memory Networks, on the other hand, make for a more grounded, applied approach. The proposal is far less convoluted and more compact in size, but its scope is also less ambitious. The overall focus seems to be on question answering tasks, even though the network is proposed as a general use architecture. Unlike Differentiable Neural Computers, no measures are taken towards program-centric capabilities; instead, a simple yet efficient mechanism of external memory attention is the paper's sole contribution. The exact implementation of this mechanism is clear and easy to follow, but feels somewhat arbitrary at times. For instance, no motivation is provided for the particular choices of transformations applied, both in terms of the concrete operations used, as well as their overall necessity. 
 
+End-to-End Networks also draw inspiration from a predecessor paper, namely Memory Networks\cite{DBLP:journals/corr/WestonCB14}, which proposed a very similar architecture. Despite their similarity, End-to-End Networks make a very important contribution over the original paper. Whereas Memory Networks suffer from discontinuities and non-differentiable operations, requiring many levels of human supervision to train, End-to-End Networks resolve these issues by smart application of soft attention. Overall, the idea is easy to replicate and employ, serving as a portable and directly usable alternative to standard choices of sequence processing architectures such as the LSTM, at least for tasks requiring query matching and long-term data dependencies.
 
+\subsection{Computational Relevance}
+On another level, neither of the two papers address computation-theoretic problems. They are both very technical in nature, and their orientation is that of an engineering perspective. This does not, by any means, imply a weakness on their part. Neural Networks, and RNNs in particular, are already well-established as powerful machinery for function approximation\cite{Cybenko1989} and are known to be Turing complete\cite{SIEGELMANN1995132}. Improvements over their efficiency, training speed and applicability are nontheless extremely important scientific advancements, and as such both papers do progress the fields of both Artificial Intelligence and Computer Science. 
 
 \section{Conclusion}
 \label{Conc}
+Machine learning has been called, often justifiably, an ad-hoc field, riddled with impulsive design decisions. Enhancing recurrent networks with memory capacities via attentive interfaces is a grounded, logical approach that seeks to shatter this perception. It is a far-reaching idea, deeply rooted in both modern computer science and neurological perspectives of biological intelligence. As such, I believe both of the papers presented are quite significant, as they pave the way for exciting new research and applications of neural computation.
+
+In conclusion, fitting two lengthy technical papers into a brief overview is by no means an easy task. Several details had to be omitted, and some concessions had to be made on the amount of explanatory background provided. Nevertheless, I hope that this paper, as supplemented by the accompanying presentation, has managed to intrigue the interested reader and presented a motivating case towards further researching the topic. 
 
 \bibliographystyle{ieeetr}
 \bibliography{sources}
